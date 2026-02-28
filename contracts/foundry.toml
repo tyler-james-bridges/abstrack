@@ -1,0 +1,25 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+
+# Abstract (ZK Stack) settings
+# Use --zksync flag with all forge commands:
+#   forge build --zksync
+#   forge test --zksync
+#   forge create --zksync
+
+[profile.abstract]
+src = "src"
+out = "zkout"
+libs = ["lib"]
+
+# Abstract Testnet RPC
+[rpc_endpoints]
+abstractTestnet = "https://api.testnet.abs.xyz"
+abstract = "https://api.abs.xyz"
+
+# Etherscan / Abscan verification
+[etherscan]
+abstractTestnet = { key = "${ABSCAN_API_KEY}", url = "https://api-sepolia.abscan.org/api" }
+abstract = { key = "${ABSCAN_API_KEY}", url = "https://api.abscan.org/api" }
