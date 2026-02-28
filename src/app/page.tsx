@@ -6,6 +6,8 @@ import { SignInButton } from "@/components/wallet/SignInButton";
 import { BlockPicker } from "@/components/home/BlockPicker";
 import { RecentBlocks } from "@/components/home/RecentBlocks";
 import { Leaderboard } from "@/components/home/Leaderboard";
+import { PlayerBestScores } from "@/components/home/PlayerBestScores";
+import { ContractLink } from "@/components/home/ContractLink";
 
 export default function Home() {
   const { address } = useAccount();
@@ -37,13 +39,15 @@ export default function Home() {
           <>
             <BlockPicker />
             <RecentBlocks />
+            <PlayerBestScores />
             <Leaderboard />
 
-            {/* Connected indicator */}
-            <div className="mt-8 text-center">
+            {/* Connected indicator + contract link */}
+            <div className="mt-8 flex flex-col items-center gap-2">
               <p className="text-xs text-white/30 font-mono">
                 {address.slice(0, 6)}...{address.slice(-4)}
               </p>
+              <ContractLink />
             </div>
           </>
         ) : (
@@ -55,6 +59,9 @@ export default function Home() {
 
             {/* Show leaderboard even when disconnected */}
             <Leaderboard />
+
+            {/* Contract link for non-connected users too */}
+            <ContractLink />
           </div>
         )}
       </main>

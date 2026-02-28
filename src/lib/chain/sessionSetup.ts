@@ -1,12 +1,65 @@
-import { TEMPO_SCORE_REGISTRY_ADDRESS } from "./scoreContract";
+import { toFunctionSelector, parseEther } from "viem";
+import {
+  LimitType,
+  LimitUnlimited,
+  type SessionConfig,
+  type CallPolicy,
+} from "@abstract-foundation/agw-client/sessions";
+import {
+  TEMPO_SCORE_REGISTRY_ADDRESS,
+  PAYMASTER_ADDRESS,
+} from "./scoreContract";
 
 /**
- * Session key configuration for TEMPO.
- * Scoped to submitScore() only, 1-hour expiry.
- * Used with AGW session keys to enable popup-free score submission.
+ * Session key duration: 1 hour (in seconds).
  */
-export const SESSION_KEY_CONFIG = {
-  contractAddress: TEMPO_SCORE_REGISTRY_ADDRESS,
-  functionSelector: "0x53f9b436" as const, // submitScore(uint256,uint256)
-  expirySeconds: 3600, // 1 hour
-};
+const SESSION_DURATION_SECONDS = 60 * 60;
+
+/**
+ * Build a CallPolicy scoped to submitScore(uint256,uint256) on the TempoScoreRegistry.
+ * - No ETH value required (the function is nonpayable, gas is sponsored).
+ * - No parameter constraints -- any blockNumber/score combination is allowed.
+ */
+function buildSubmitScoreCallPolicy(): CallPolicy {
+  return {
+    target: TEMPO_SCORE_REGISTRY_ADDRESS,
+    selector: toFunctionSelector("submitScore(uint256,uint256)"),
+    maxValuePerUse: 0n,
+    valueLimit: LimitUnlimited,
+    constraints: [],
+  };
+}
+
+/**
+ * Build a full SessionConfig for the given session signer address.
+ * The session is scoped exclusively to `submitScore` and expires after 1 hour.
+ */
+export function buildTempoSessionConfig(
+  signerAddress: `0x${string}`
+): SessionConfig {
+  const expiresAt = BigInt(
+    Math.floor(Date.now() / 1000) + SESSION_DURATION_SECONDS
+  );
+
+  return {
+    signer: signerAddress,
+    expiresAt,
+    feeLimit: {
+      limitType: LimitType.Lifetime,
+      limit: parseEther("0.1"), // generous lifetime gas budget (sponsored anyway)
+      period: 0n,
+    },
+    callPolicies: [buildSubmitScoreCallPolicy()],
+    transferPolicies: [],
+  };
+}
+
+/**
+ * Paymaster address used for gas sponsorship when creating the session.
+ */
+export { PAYMASTER_ADDRESS as SESSION_PAYMASTER };
+
+/**
+ * Duration constant exported for UI display purposes.
+ */
+export const SESSION_DURATION_DISPLAY = "1 hour";

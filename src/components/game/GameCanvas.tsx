@@ -9,7 +9,6 @@ import {
   NOTE_SPEED,
   HIT_ZONE_Y,
   NOTE_SIZE,
-  CANVAS_PADDING,
 } from "@/lib/game/constants";
 
 interface GameCanvasProps {
@@ -25,7 +24,11 @@ export function GameCanvas({ chart, getCurrentTime, isPlaying }: GameCanvasProps
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, height: number) => {
       const currentTime = getCurrentTime();
-      const laneWidth = (width - CANVAS_PADDING * 2) / LANE_COUNT;
+      // Responsive padding: smaller on narrow screens
+      const canvasPadding = width < 500 ? 12 : 40;
+      // Responsive note size
+      const noteSize = width < 500 ? 36 : NOTE_SIZE;
+      const laneWidth = (width - canvasPadding * 2) / LANE_COUNT;
       const hitY = height * HIT_ZONE_Y;
 
       // Clear
@@ -36,7 +39,7 @@ export function GameCanvas({ chart, getCurrentTime, isPlaying }: GameCanvasProps
       ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
       ctx.lineWidth = 1;
       for (let i = 0; i <= LANE_COUNT; i++) {
-        const x = CANVAS_PADDING + i * laneWidth;
+        const x = canvasPadding + i * laneWidth;
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
@@ -47,25 +50,26 @@ export function GameCanvas({ chart, getCurrentTime, isPlaying }: GameCanvasProps
       ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(CANVAS_PADDING, hitY);
-      ctx.lineTo(width - CANVAS_PADDING, hitY);
+      ctx.moveTo(canvasPadding, hitY);
+      ctx.lineTo(width - canvasPadding, hitY);
       ctx.stroke();
 
       // Draw hit zone targets
+      const labelFontSize = width < 500 ? 11 : 14;
       for (let i = 0; i < LANE_COUNT; i++) {
-        const x = CANVAS_PADDING + i * laneWidth + laneWidth / 2;
+        const x = canvasPadding + i * laneWidth + laneWidth / 2;
         ctx.strokeStyle = LANE_COLORS[i] + "40";
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(x, hitY, NOTE_SIZE / 2 + 4, 0, Math.PI * 2);
+        ctx.arc(x, hitY, noteSize / 2 + 4, 0, Math.PI * 2);
         ctx.stroke();
 
         // Lane label
         ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
-        ctx.font = "bold 14px monospace";
+        ctx.font = `bold ${labelFontSize}px monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(LANE_LABELS[i], x, hitY + NOTE_SIZE / 2 + 20);
+        ctx.fillText(LANE_LABELS[i], x, hitY + noteSize / 2 + 16);
       }
 
       // Draw notes
@@ -74,17 +78,17 @@ export function GameCanvas({ chart, getCurrentTime, isPlaying }: GameCanvasProps
         const y = hitY - timeDiff * NOTE_SPEED;
 
         // Skip notes that are off screen
-        if (y < -NOTE_SIZE || y > height + NOTE_SIZE) continue;
+        if (y < -noteSize || y > height + noteSize) continue;
 
         const x =
-          CANVAS_PADDING + note.lane * laneWidth + laneWidth / 2;
+          canvasPadding + note.lane * laneWidth + laneWidth / 2;
 
         if (note.hit) {
           if (note.grade === "miss") {
             // Faded red X
             ctx.globalAlpha = 0.3;
             ctx.fillStyle = "#ff6b6b";
-            ctx.font = "bold 20px sans-serif";
+            ctx.font = `bold ${width < 500 ? 16 : 20}px sans-serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText("X", x, y);
@@ -97,26 +101,26 @@ export function GameCanvas({ chart, getCurrentTime, isPlaying }: GameCanvasProps
         // Note glow
         const gradient = ctx.createRadialGradient(
           x, y, 0,
-          x, y, NOTE_SIZE
+          x, y, noteSize
         );
         gradient.addColorStop(0, LANE_COLORS[note.lane] + "30");
         gradient.addColorStop(1, "transparent");
         ctx.fillStyle = gradient;
-        ctx.fillRect(x - NOTE_SIZE, y - NOTE_SIZE, NOTE_SIZE * 2, NOTE_SIZE * 2);
+        ctx.fillRect(x - noteSize, y - noteSize, noteSize * 2, noteSize * 2);
 
         // Note body
         ctx.fillStyle = LANE_COLORS[note.lane];
         ctx.shadowColor = LANE_COLORS[note.lane];
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = width < 500 ? 8 : 12;
         ctx.beginPath();
-        ctx.arc(x, y, NOTE_SIZE / 2, 0, Math.PI * 2);
+        ctx.arc(x, y, noteSize / 2, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
 
         // Note inner highlight
         ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
         ctx.beginPath();
-        ctx.arc(x, y - 3, NOTE_SIZE / 4, 0, Math.PI * 2);
+        ctx.arc(x, y - 3, noteSize / 4, 0, Math.PI * 2);
         ctx.fill();
       }
     },

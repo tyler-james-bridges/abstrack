@@ -92,3 +92,78 @@ body {
 .animate-grade-flash {
   animation: grade-flash 0.6s ease-out forwards;
 }
+
+/* Screen shake on miss */
+@keyframes screen-shake {
+  0% { transform: translateX(0); }
+  15% { transform: translateX(-4px) translateY(2px); }
+  30% { transform: translateX(3px) translateY(-1px); }
+  45% { transform: translateX(-2px) translateY(1px); }
+  60% { transform: translateX(2px); }
+  75% { transform: translateX(-1px); }
+  100% { transform: translateX(0); }
+}
+
+.animate-screen-shake {
+  animation: screen-shake 0.3s ease-out;
+}
+
+/* Volume slider track styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #4ecdc4;
+  margin-top: -5px;
+  box-shadow: 0 0 6px rgba(78, 205, 196, 0.4);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #4ecdc4;
+  border: none;
+  box-shadow: 0 0 6px rgba(78, 205, 196, 0.4);
+}
+
+/* Countdown tick animation */
+@keyframes countdown-pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-countdown-pop {
+  animation: countdown-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}

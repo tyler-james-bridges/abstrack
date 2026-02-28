@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback, use } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { GameEngine } from "@/lib/game/GameEngine";
 import type { GameEvent } from "@/lib/game/GameEngine";
 import type { BeatChart, FinalScore, GamePhase, HitResult, GameState } from "@/lib/game/types";
@@ -11,6 +13,9 @@ import { GameHUD } from "@/components/game/GameHUD";
 import { HitFeedback } from "@/components/game/HitFeedback";
 import { GameLoadingScreen } from "@/components/game/GameLoadingScreen";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
+import { PauseOverlay } from "@/components/game/PauseOverlay";
+import { HowToPlayOverlay, hasSeenHowToPlay, markHowToPlaySeen } from "@/components/game/HowToPlayOverlay";
+import { MobileTouchZones } from "@/components/game/MobileTouchZones";
 
 interface PlayPageProps {
   params: Promise<{ blockNumber: string }>;
@@ -19,6 +24,7 @@ interface PlayPageProps {
 export default function PlayPage({ params }: PlayPageProps) {
   const { blockNumber: blockNumberStr } = use(params);
   const blockNumber = BigInt(blockNumberStr);
+  const router = useRouter();
 
   const engineRef = useRef<GameEngine | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -41,6 +47,16 @@ export default function PlayPage({ params }: PlayPageProps) {
   const [countdown, setCountdown] = useState(0);
   const [loadingStatus, setLoadingStatus] = useState("Fetching block data...");
   const [error, setError] = useState<string | null>(null);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
+  const [waitingForHowToPlay, setWaitingForHowToPlay] = useState(false);
+
+  // Check if first visit and show how-to-play
+  useEffect(() => {
+    if (!hasSeenHowToPlay()) {
+      setShowHowToPlay(true);
+    }
+  }, []);
 
   const startGame = useCallback(async () => {
     try {
@@ -69,6 +85,11 @@ export default function PlayPage({ params }: PlayPageProps) {
           case "hit":
             setLatestHit(event.result);
             break;
+          case "miss":
+            // Trigger screen shake on miss
+            setIsShaking(true);
+            setTimeout(() => setIsShaking(false), 300);
+            break;
           case "countdown":
             setCountdown(event.value);
             break;
@@ -78,7 +99,18 @@ export default function PlayPage({ params }: PlayPageProps) {
         }
       });
 
-      await engine.load(generatedChart, containerRef.current ?? undefined);
+      // If first visit, wait for how-to-play dismissal before loading engine
+      if (!hasSeenHowToPlay()) {
+        setWaitingForHowToPlay(true);
+        // Store the engine load for later
+        const loadEngine = async () => {
+          await engine.load(generatedChart, containerRef.current ?? undefined);
+        };
+        // We'll call loadEngine when how-to-play is dismissed
+        (window as unknown as Record<string, () => Promise<void>>).__tempoLoadEngine = loadEngine;
+      } else {
+        await engine.load(generatedChart, containerRef.current ?? undefined);
+      }
 
       return () => {
         unsubscribe();
@@ -102,6 +134,21 @@ export default function PlayPage({ params }: PlayPageProps) {
     };
   }, [startGame]);
 
+  const handleDismissHowToPlay = useCallback(async () => {
+    markHowToPlaySeen();
+    setShowHowToPlay(false);
+
+    // If we were waiting, load the engine now
+    if (waitingForHowToPlay && engineRef.current && chart) {
+      setWaitingForHowToPlay(false);
+      const loadEngine = (window as unknown as Record<string, (() => Promise<void>) | undefined>).__tempoLoadEngine;
+      if (loadEngine) {
+        await loadEngine();
+        delete (window as unknown as Record<string, (() => Promise<void>) | undefined>).__tempoLoadEngine;
+      }
+    }
+  }, [waitingForHowToPlay, chart]);
+
   const handlePlayAgain = useCallback(() => {
     engineRef.current?.destroy();
     engineRef.current = null;
@@ -121,6 +168,24 @@ export default function PlayPage({ params }: PlayPageProps) {
     startGame();
   }, [startGame]);
 
+  const handlePause = useCallback(() => {
+    engineRef.current?.pause();
+  }, []);
+
+  const handleResume = useCallback(() => {
+    engineRef.current?.resume();
+  }, []);
+
+  const handleQuit = useCallback(() => {
+    engineRef.current?.destroy();
+    engineRef.current = null;
+    router.push("/");
+  }, [router]);
+
+  const handleVolumeChange = useCallback((db: number) => {
+    engineRef.current?.setVolume(db);
+  }, []);
+
   const getCurrentTime = useCallback(() => {
     return engineRef.current?.getCurrentTime() ?? 0;
   }, []);
@@ -129,17 +194,25 @@ export default function PlayPage({ params }: PlayPageProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white gap-4">
         <p className="text-red-400 text-lg">Error: {error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-6 py-2 rounded-full border border-white/20 text-sm hover:bg-white/10"
-        >
-          Retry
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-2 rounded-full border border-white/20 text-sm hover:bg-white/10"
+          >
+            Retry
+          </button>
+          <Link
+            href="/"
+            className="px-6 py-2 rounded-full border border-white/20 text-sm hover:bg-white/10"
+          >
+            Home
+          </Link>
+        </div>
       </div>
     );
   }
 
-  if (phase === "loading") {
+  if (phase === "loading" && !showHowToPlay) {
     return (
       <GameLoadingScreen
         blockNumber={Number(blockNumber)}
@@ -160,7 +233,7 @@ export default function PlayPage({ params }: PlayPageProps) {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-screen bg-black overflow-hidden select-none"
+      className={`relative w-full h-dvh bg-black overflow-hidden select-none ${isShaking ? "animate-screen-shake" : ""}`}
     >
       {chart && (
         <>
@@ -169,16 +242,26 @@ export default function PlayPage({ params }: PlayPageProps) {
             getCurrentTime={getCurrentTime}
             isPlaying={phase === "playing"}
           />
-          <GameHUD state={gameState} />
+          <GameHUD state={gameState} onVolumeChange={handleVolumeChange} />
           <HitFeedback latestHit={latestHit} />
+          <MobileTouchZones />
         </>
       )}
+
+      {/* Back button - top-left, below volume */}
+      <Link
+        href="/"
+        className="absolute top-10 left-3 sm:top-12 sm:left-4 z-20 text-white/20 hover:text-white/60 transition-colors text-xs font-[family-name:var(--font-roobert)]"
+      >
+        &larr; Back
+      </Link>
 
       {/* Countdown overlay */}
       {phase === "countdown" && countdown > 0 && (
         <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/50">
           <p
-            className="text-9xl font-black text-white animate-pulse"
+            key={countdown}
+            className="text-7xl sm:text-9xl font-black text-white animate-countdown-pop"
             style={{
               textShadow: "0 0 40px rgba(78, 205, 196, 0.5)",
             }}
@@ -186,6 +269,30 @@ export default function PlayPage({ params }: PlayPageProps) {
             {countdown}
           </p>
         </div>
+      )}
+
+      {/* Pause overlay */}
+      {phase === "paused" && (
+        <PauseOverlay onResume={handleResume} onQuit={handleQuit} />
+      )}
+
+      {/* How to Play overlay (first visit) */}
+      {showHowToPlay && (
+        <HowToPlayOverlay onDismiss={handleDismissHowToPlay} />
+      )}
+
+      {/* Mobile pause button */}
+      {phase === "playing" && (
+        <button
+          onClick={handlePause}
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-20 md:hidden p-2 rounded-full bg-white/5 border border-white/10 text-white/40"
+          aria-label="Pause"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16" rx="1" />
+            <rect x="14" y="4" width="4" height="16" rx="1" />
+          </svg>
+        </button>
       )}
     </div>
   );

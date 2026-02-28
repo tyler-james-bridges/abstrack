@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useWriteContractSponsored } from "@abstract-foundation/agw-react";
@@ -13,6 +13,7 @@ import {
   TEMPO_SCORE_REGISTRY_ADDRESS,
   PAYMASTER_ADDRESS,
 } from "@/lib/chain/scoreContract";
+import { abscanTxUrl } from "@/lib/format";
 
 interface GameOverScreenProps {
   finalScore: FinalScore;
@@ -27,32 +28,169 @@ const GRADE_BG_COLORS: Record<string, string> = {
   D: "from-red-500/20 to-red-600/10",
 };
 
-export function GameOverScreen({ finalScore, onPlayAgain }: GameOverScreenProps) {
+// ---------------------------------------------------------------------------
+// Validation
+// ---------------------------------------------------------------------------
+
+interface ValidationResult {
+  valid: boolean;
+  error: string | null;
+}
+
+function validateScore(
+  totalScore: number,
+  blockNumber: number
+): ValidationResult {
+  if (totalScore < 0) {
+    return { valid: false, error: "Score cannot be negative." };
+  }
+  if (totalScore > MAX_SCORE) {
+    return {
+      valid: false,
+      error: `Score exceeds the maximum allowed value (${MAX_SCORE.toLocaleString()}).`,
+    };
+  }
+  if (!Number.isInteger(totalScore)) {
+    return { valid: false, error: "Score must be a whole number." };
+  }
+  if (blockNumber <= 0) {
+    return { valid: false, error: "Invalid block number." };
+  }
+  if (!Number.isInteger(blockNumber)) {
+    return { valid: false, error: "Block number must be a whole number." };
+  }
+  return { valid: true, error: null };
+}
+
+/**
+ * Parse a user-friendly error message from a contract revert or RPC error.
+ */
+function parseSubmissionError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+
+  // Contract-level reverts
+  if (message.includes("New score must be higher")) {
+    return "You already have a higher score for this block. Only improvements are recorded on-chain.";
+  }
+  if (message.includes("Score exceeds maximum")) {
+    return "Score exceeds the maximum allowed value (1,000,000).";
+  }
+
+  // Wallet-level rejections
+  if (
+    message.includes("rejected") ||
+    message.includes("denied") ||
+    message.includes("User rejected")
+  ) {
+    return "Transaction was rejected. You can try again.";
+  }
+
+  // RPC errors
+  if (message.includes("insufficient funds")) {
+    return "Insufficient funds for gas. The paymaster may be out of funds.";
+  }
+  if (
+    message.includes("network") ||
+    message.includes("timeout") ||
+    message.includes("fetch")
+  ) {
+    return "Network error. Please check your connection and try again.";
+  }
+
+  // Fallback: truncate long messages
+  if (message.length > 150) {
+    return message.slice(0, 147) + "...";
+  }
+  return message;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function GameOverScreen({
+  finalScore,
+  onPlayAgain,
+}: GameOverScreenProps) {
   const router = useRouter();
   const { address } = useAccount();
   const [submitted, setSubmitted] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   const {
     writeContractSponsored,
     data: txHash,
     isPending: isSubmitting,
+    error: writeError,
   } = useWriteContractSponsored();
 
   const { data: receipt } = useWaitForTransactionReceipt({ hash: txHash });
 
+  // Keyboard shortcuts
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "r" || e.key === "R") {
+        e.preventDefault();
+        onPlayAgain();
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        router.push("/");
+      }
+    },
+    [onPlayAgain, router]
+  );
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Client-side validation (runs once)
+  const validation = useMemo(
+    () => validateScore(finalScore.totalScore, finalScore.blockNumber),
+    [finalScore.totalScore, finalScore.blockNumber]
+  );
+
+  // Derive error to display from either validation, write error, or manual error
+  const displayError = useMemo(() => {
+    if (!validation.valid) return validation.error;
+    if (submissionError) return submissionError;
+    if (writeError) return parseSubmissionError(writeError);
+    return null;
+  }, [validation, submissionError, writeError]);
+
   const handleSubmitScore = () => {
     if (!address || submitted) return;
+    if (!validation.valid) return;
 
-    writeContractSponsored({
-      abi: TEMPO_SCORE_REGISTRY_ABI,
-      address: TEMPO_SCORE_REGISTRY_ADDRESS,
-      functionName: "submitScore",
-      args: [BigInt(finalScore.blockNumber), BigInt(finalScore.totalScore)],
-      paymaster: PAYMASTER_ADDRESS,
-      paymasterInput: getGeneralPaymasterInput({ innerInput: "0x" }),
-    });
+    setSubmissionError(null);
 
-    setSubmitted(true);
+    try {
+      writeContractSponsored(
+        {
+          abi: TEMPO_SCORE_REGISTRY_ABI,
+          address: TEMPO_SCORE_REGISTRY_ADDRESS,
+          functionName: "submitScore",
+          args: [
+            BigInt(finalScore.blockNumber),
+            BigInt(finalScore.totalScore),
+          ],
+          paymaster: PAYMASTER_ADDRESS,
+          paymasterInput: getGeneralPaymasterInput({ innerInput: "0x" }),
+        },
+        {
+          onError: (error) => {
+            setSubmissionError(parseSubmissionError(error));
+            setSubmitted(false);
+          },
+        }
+      );
+
+      setSubmitted(true);
+    } catch (err) {
+      setSubmissionError(parseSubmissionError(err));
+    }
   };
 
   const accuracy = (finalScore.accuracy * 100).toFixed(1);
@@ -115,7 +253,9 @@ export function GameOverScreen({ finalScore, onPlayAgain }: GameOverScreenProps)
               >
                 {grade}
               </p>
-              <p className="text-lg font-bold">{finalScore.gradeCounts[grade]}</p>
+              <p className="text-lg font-bold">
+                {finalScore.gradeCounts[grade]}
+              </p>
             </div>
           ))}
         </div>
@@ -125,19 +265,41 @@ export function GameOverScreen({ finalScore, onPlayAgain }: GameOverScreenProps)
           Block #{finalScore.blockNumber} | {finalScore.totalNotes} notes
         </p>
 
+        {/* Error display */}
+        {displayError && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-sm text-red-400">{displayError}</p>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex flex-col gap-3">
           {address && !receipt && (
             <button
               onClick={handleSubmitScore}
-              disabled={isSubmitting || submitted}
+              disabled={isSubmitting || submitted || !validation.valid}
               className="w-full h-12 rounded-full bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-roobert)]"
             >
               {isSubmitting
                 ? "Submitting..."
-                : submitted
+                : submitted && !submissionError
                   ? "Confirming..."
-                  : "Submit Score (Gas-Free)"}
+                  : !validation.valid
+                    ? "Score Invalid"
+                    : "Submit Score (Gas-Free)"}
+            </button>
+          )}
+
+          {/* Retry button shown after an error */}
+          {submissionError && !isSubmitting && (
+            <button
+              onClick={() => {
+                setSubmitted(false);
+                setSubmissionError(null);
+              }}
+              className="w-full h-10 rounded-full border border-red-500/30 text-red-400 text-sm hover:bg-red-500/10 transition-colors font-[family-name:var(--font-roobert)]"
+            >
+              Try Again
             </button>
           )}
 
@@ -147,7 +309,7 @@ export function GameOverScreen({ finalScore, onPlayAgain }: GameOverScreenProps)
                 Score submitted on-chain!
               </p>
               <a
-                href={`https://sepolia.abscan.org/tx/${receipt.transactionHash}`}
+                href={abscanTxUrl(receipt.transactionHash)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-blue-400 hover:text-blue-300 underline"
@@ -170,6 +332,22 @@ export function GameOverScreen({ finalScore, onPlayAgain }: GameOverScreenProps)
           >
             Home
           </button>
+        </div>
+
+        {/* Keyboard shortcuts */}
+        <div className="flex justify-center gap-4 mt-2 text-[10px] text-white/20">
+          <span>
+            <kbd className="px-1 py-0.5 rounded bg-white/5 text-white/30 font-mono">
+              R
+            </kbd>{" "}
+            Replay
+          </span>
+          <span>
+            <kbd className="px-1 py-0.5 rounded bg-white/5 text-white/30 font-mono">
+              Esc
+            </kbd>{" "}
+            Home
+          </span>
         </div>
       </div>
     </div>

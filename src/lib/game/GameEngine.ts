@@ -33,6 +33,7 @@ export class GameEngine {
   private lastCountdownValue = 0;
   private eventCallbacks: GameEventCallback[] = [];
   private touchElement: HTMLElement | null = null;
+  private pauseEscapeHandler: ((e: KeyboardEvent) => void) | null = null;
 
   constructor() {
     this.audioEngine = new AudioEngine();
@@ -62,6 +63,19 @@ export class GameEngine {
     await this.audioEngine.init();
     this.audioEngine.scheduleChart(chart);
 
+    // Set up Escape key handler for pause/resume
+    this.pauseEscapeHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        if (this.phase === "playing") {
+          this.pause();
+        } else if (this.phase === "paused") {
+          this.resume();
+        }
+      }
+    };
+    window.addEventListener("keydown", this.pauseEscapeHandler);
+
     this.startCountdown();
   }
 
@@ -79,6 +93,8 @@ export class GameEngine {
     if (remaining !== this.lastCountdownValue && remaining > 0) {
       this.lastCountdownValue = remaining;
       this.emit({ type: "countdown", value: remaining });
+      // Play countdown tick sound
+      this.audioEngine.playCountdownTick(remaining === 1);
     }
 
     if (elapsed >= COUNTDOWN_DURATION) {
@@ -103,6 +119,42 @@ export class GameEngine {
     );
 
     // Start game loop
+    this.runGameLoop();
+  }
+
+  pause(): void {
+    if (this.phase !== "playing") return;
+
+    // Cancel the game loop
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
+
+    // Pause audio transport
+    this.audioEngine.pause();
+
+    // Stop input (but keep escape handler)
+    this.inputHandler.stop();
+
+    this.setPhase("paused");
+  }
+
+  resume(): void {
+    if (this.phase !== "paused") return;
+
+    this.setPhase("playing");
+
+    // Resume audio
+    this.audioEngine.resume();
+
+    // Restart input handling
+    this.inputHandler.start(
+      (input: LaneInput) => this.handleInput(input),
+      this.touchElement ?? undefined
+    );
+
+    // Restart game loop
     this.runGameLoop();
   }
 
@@ -197,9 +249,18 @@ export class GameEngine {
     return this.audioEngine.getCurrentTime();
   }
 
+  /** Set master volume in dB (-60 to 0) */
+  setVolume(db: number): void {
+    this.audioEngine.setVolume(db);
+  }
+
   destroy(): void {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
+    }
+    if (this.pauseEscapeHandler) {
+      window.removeEventListener("keydown", this.pauseEscapeHandler);
+      this.pauseEscapeHandler = null;
     }
     this.inputHandler.stop();
     this.audioEngine.dispose();

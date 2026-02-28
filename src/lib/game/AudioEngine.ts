@@ -154,6 +154,31 @@ export class AudioEngine {
     Tone.getTransport().pause();
   }
 
+  resume(): void {
+    Tone.getTransport().start();
+  }
+
+  /** Play a countdown tick sound */
+  playCountdownTick(isFinal: boolean): void {
+    const now = Tone.now();
+    if (isFinal) {
+      // Higher pitch for "GO"
+      this.fmSynth?.triggerAttackRelease("C5", "8n", now);
+    } else {
+      this.membraneSynth?.triggerAttackRelease("G2", "16n", now);
+    }
+  }
+
+  /** Set the master volume (in dB, -60 to 0) */
+  setVolume(db: number): void {
+    Tone.getDestination().volume.value = db;
+  }
+
+  /** Get the current master volume in dB */
+  getVolume(): number {
+    return Tone.getDestination().volume.value;
+  }
+
   getCurrentTime(): number {
     return Tone.getTransport().seconds;
   }

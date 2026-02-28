@@ -2,7 +2,7 @@ export type Lane = 0 | 1 | 2 | 3;
 
 export type TimingGrade = "perfect" | "great" | "good" | "miss";
 
-export type GamePhase = "loading" | "countdown" | "playing" | "finished";
+export type GamePhase = "loading" | "countdown" | "playing" | "paused" | "finished";
 
 export interface Note {
   id: number;
