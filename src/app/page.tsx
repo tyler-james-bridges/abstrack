@@ -1,42 +1,63 @@
 "use client";
 
-import Image from "next/image";
 import { useAccount } from "wagmi";
 import { BackgroundEffects } from "@/components/ui/BackgroundEffects";
-import { ResourceCards } from "@/components/ui/ResourceCards";
-import { ConnectedState } from "@/components/wallet/ConnectedState";
 import { SignInButton } from "@/components/wallet/SignInButton";
+import { BlockPicker } from "@/components/home/BlockPicker";
+import { RecentBlocks } from "@/components/home/RecentBlocks";
+import { Leaderboard } from "@/components/home/Leaderboard";
 
 export default function Home() {
   const { address } = useAccount();
 
   return (
-    <div className="relative grid grid-rows-[1fr_auto] min-h-screen p-8 pb-20 sm:p-20 font-[family-name:var(--font-avenue-mono)] bg-black overflow-hidden">
+    <div className="relative min-h-screen bg-black overflow-hidden">
       <BackgroundEffects />
 
-      <main className="relative flex flex-col items-center justify-center z-10 text-white text-center">
-        <div className="flex flex-col items-center gap-8">
-          <Image
-            src="/abstract.svg"
-            alt="Abstract logo"
-            width={240}
-            height={32}
-            quality={100}
-            priority
-          />
-          <p className="text-md font-[family-name:var(--font-roobert)]">
-            Get started by editing{" "}
-            <code className="bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
+      <main className="relative z-10 flex flex-col items-center px-4 py-12 sm:py-20 text-white">
+        {/* Logo / Branding */}
+        <div className="flex flex-col items-center gap-3 mb-10">
+          <h1
+            className="text-6xl sm:text-7xl font-black tracking-tighter font-[family-name:var(--font-roobert)]"
+            style={{
+              background: "linear-gradient(135deg, #4ecdc4, #45b7d1, #ffd700)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            TEMPO
+          </h1>
+          <p className="text-sm sm:text-base text-white/50 font-[family-name:var(--font-roobert)] text-center max-w-sm">
+            A rhythm game powered by blockchain blocks. Every block is a unique beat.
           </p>
-
-          {address ? <ConnectedState /> : <SignInButton />}
         </div>
-      </main>
 
-      <ResourceCards />
+        {/* Auth or Game */}
+        {address ? (
+          <>
+            <BlockPicker />
+            <RecentBlocks />
+            <Leaderboard />
+
+            {/* Connected indicator */}
+            <div className="mt-8 text-center">
+              <p className="text-xs text-white/30 font-mono">
+                {address.slice(0, 6)}...{address.slice(-4)}
+              </p>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-6 mt-4">
+            <SignInButton />
+            <p className="text-xs text-white/30 max-w-xs text-center">
+              Connect your Abstract Global Wallet to play and submit scores on-chain.
+            </p>
+
+            {/* Show leaderboard even when disconnected */}
+            <Leaderboard />
+          </div>
+        )}
+      </main>
     </div>
   );
 }

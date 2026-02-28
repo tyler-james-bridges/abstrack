@@ -2,17 +2,17 @@
 pragma solidity ^0.8.13;
 
 import {Script} from "forge-std/Script.sol";
-import {Counter} from "../src/Counter.sol";
+import {TempoScoreRegistry} from "../src/TempoScoreRegistry.sol";
 
-contract CounterScript is Script {
-    Counter public counter;
+contract TempoScoreRegistryScript is Script {
+    TempoScoreRegistry public registry;
 
     function setUp() public {}
 
     function run() public {
         vm.startBroadcast();
 
-        counter = new Counter();
+        registry = new TempoScoreRegistry();
 
         vm.stopBroadcast();
     }

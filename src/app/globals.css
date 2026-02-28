@@ -1,8 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0a;
+  --foreground: #ededed;
+
+  /* TEMPO game colors */
+  --tempo-perfect: #ffd700;
+  --tempo-great: #4ecdc4;
+  --tempo-good: #45b7d1;
+  --tempo-miss: #ff6b6b;
+
+  /* Lane colors */
+  --tempo-lane-0: #ff6b6b;
+  --tempo-lane-1: #4ecdc4;
+  --tempo-lane-2: #45b7d1;
+  --tempo-lane-3: #f9ca24;
 }
 
 @theme inline {
@@ -12,15 +24,71 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Loading bar animation */
+@keyframes loading-bar {
+  0% {
+    width: 0%;
+    margin-left: 0%;
+  }
+  50% {
+    width: 60%;
+    margin-left: 20%;
+  }
+  100% {
+    width: 0%;
+    margin-left: 100%;
+  }
+}
+
+.animate-loading-bar {
+  animation: loading-bar 1.5s ease-in-out infinite;
+}
+
+/* Hit feedback pulse */
+@keyframes hit-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-hit-pulse {
+  animation: hit-pulse 0.3s ease-out forwards;
+}
+
+/* Note glow */
+@keyframes note-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px var(--tempo-great);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--tempo-great);
+  }
+}
+
+/* Grade flash */
+@keyframes grade-flash {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(1.2);
+  }
+}
+
+.animate-grade-flash {
+  animation: grade-flash 0.6s ease-out forwards;
 }
