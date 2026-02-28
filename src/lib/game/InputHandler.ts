@@ -3,6 +3,37 @@ import { LANE_KEYS } from "./constants";
 
 type InputCallback = (input: LaneInput) => void;
 
+/**
+ * Check if a touch target (or any of its ancestors) is an interactive UI
+ * element that should receive normal browser tap behaviour instead of being
+ * consumed as a game lane input.
+ *
+ * We look for:
+ *  - The `data-game-ui` attribute (explicit opt-in for overlaid UI)
+ *  - Standard interactive elements: <button>, <a>, <input>, <select>, <textarea>
+ *  - Elements with role="button" or role="link"
+ */
+function isInteractiveUI(target: EventTarget | null): boolean {
+  let el = target as HTMLElement | null;
+  while (el) {
+    if (el.dataset?.gameUi !== undefined) return true;
+    const tag = el.tagName;
+    if (
+      tag === "BUTTON" ||
+      tag === "A" ||
+      tag === "INPUT" ||
+      tag === "SELECT" ||
+      tag === "TEXTAREA"
+    ) {
+      return true;
+    }
+    const role = el.getAttribute?.("role");
+    if (role === "button" || role === "link") return true;
+    el = el.parentElement;
+  }
+  return false;
+}
+
 export class InputHandler {
   private callback: InputCallback | null = null;
   private boundKeyDown: ((e: KeyboardEvent) => void) | null = null;
@@ -47,6 +78,12 @@ export class InputHandler {
     if (touchElement) {
       this.touchElement = touchElement;
       this.boundTouchStart = (e: TouchEvent) => {
+        // Allow interactive UI elements (buttons, links, etc.) to handle
+        // their own touch events normally.  Only preventDefault for game
+        // lane taps so the browser doesn't scroll or trigger unintended
+        // actions while playing.
+        if (isInteractiveUI(e.target)) return;
+
         e.preventDefault();
         for (let i = 0; i < e.changedTouches.length; i++) {
           const touch = e.changedTouches[i];
@@ -62,6 +99,8 @@ export class InputHandler {
       };
 
       this.boundTouchEnd = (e: TouchEvent) => {
+        if (isInteractiveUI(e.target)) return;
+
         e.preventDefault();
         for (let i = 0; i < e.changedTouches.length; i++) {
           const touch = e.changedTouches[i];

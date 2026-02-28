@@ -168,7 +168,7 @@ export function GameCanvas({ chart, getCurrentTime, isPlaying }: GameCanvasProps
   return (
     <canvas
       ref={canvasRef}
-      className="w-full h-full absolute inset-0"
+      className="w-full h-full absolute inset-0 pointer-events-none"
       style={{ touchAction: "none" }}
     />
   );

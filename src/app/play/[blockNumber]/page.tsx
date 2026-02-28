@@ -234,6 +234,7 @@ export default function PlayPage({ params }: PlayPageProps) {
     <div
       ref={containerRef}
       className={`relative w-full h-dvh bg-black overflow-hidden select-none ${isShaking ? "animate-screen-shake" : ""}`}
+      style={{ touchAction: "none" }}
     >
       {chart && (
         <>
@@ -252,13 +253,15 @@ export default function PlayPage({ params }: PlayPageProps) {
       <Link
         href="/"
         className="absolute top-10 left-3 sm:top-12 sm:left-4 z-20 text-white/20 hover:text-white/60 transition-colors text-xs font-[family-name:var(--font-roobert)]"
+        data-game-ui
+        style={{ touchAction: "auto" }}
       >
         &larr; Back
       </Link>
 
       {/* Countdown overlay */}
       {phase === "countdown" && countdown > 0 && (
-        <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/50">
+        <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/50" data-game-ui>
           <p
             key={countdown}
             className="text-7xl sm:text-9xl font-black text-white animate-countdown-pop"
@@ -287,6 +290,8 @@ export default function PlayPage({ params }: PlayPageProps) {
           onClick={handlePause}
           className="absolute top-3 left-1/2 -translate-x-1/2 z-20 md:hidden p-2 rounded-full bg-white/5 border border-white/10 text-white/40"
           aria-label="Pause"
+          data-game-ui
+          style={{ touchAction: "auto" }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="4" width="4" height="16" rx="1" />

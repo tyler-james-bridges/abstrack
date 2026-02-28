@@ -120,7 +120,7 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
       )}
 
       {/* Volume control - top left */}
-      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 pointer-events-auto">
+      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 pointer-events-auto" style={{ touchAction: "auto" }}>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowVolumeSlider((v) => !v)}

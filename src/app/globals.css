@@ -30,6 +30,29 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* ------------------------------------------------------------------
+   Mobile touch fixes
+   Ensure interactive elements are always tappable on touch devices.
+   ------------------------------------------------------------------ */
+
+/* Buttons and links must always be tappable */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+[role="link"] {
+  touch-action: auto;
+}
+
+/* Elements marked as game UI must remain tappable even inside the
+   game container which has touch-action:none */
+[data-game-ui],
+[data-game-ui] * {
+  touch-action: auto;
+}
+
 /* Loading bar animation */
 @keyframes loading-bar {
   0% {

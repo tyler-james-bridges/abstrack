@@ -45,11 +45,11 @@ export function MobileTouchZones() {
 
   return (
     <div
-      className="absolute bottom-0 left-0 right-0 h-28 z-10 pointer-events-none md:hidden"
+      className="absolute bottom-0 left-0 right-0 h-28 z-10 md:hidden"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
-      style={{ pointerEvents: "none" }}
+      style={{ touchAction: "none" }}
     >
       <div className="relative w-full h-full flex">
         {Array.from({ length: LANE_COUNT }).map((_, i) => {

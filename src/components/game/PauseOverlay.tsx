@@ -28,7 +28,7 @@ export function PauseOverlay({ onResume, onQuit }: PauseOverlayProps) {
   }, [handleKeyDown]);
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" data-game-ui style={{ touchAction: "auto" }}>
       <div className="flex flex-col items-center gap-8">
         {/* Pause icon */}
         <div className="flex items-center gap-3">

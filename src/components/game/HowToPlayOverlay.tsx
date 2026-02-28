@@ -36,7 +36,7 @@ export function HowToPlayOverlay({ onDismiss }: HowToPlayOverlayProps) {
   }, [handleKeyDown]);
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" data-game-ui style={{ touchAction: "auto" }}>
       <div className="w-full max-w-sm flex flex-col items-center gap-6">
         {/* Title */}
         <h2
