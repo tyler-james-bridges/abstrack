@@ -14,7 +14,6 @@ import { GameLoadingScreen } from "@/components/game/GameLoadingScreen";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
 import { PauseOverlay } from "@/components/game/PauseOverlay";
 import { HowToPlayOverlay, hasSeenHowToPlay, markHowToPlaySeen } from "@/components/game/HowToPlayOverlay";
-import { MobileTouchZones } from "@/components/game/MobileTouchZones";
 
 interface PlayPageProps {
   params: Promise<{ blockNumber: string }>;
@@ -184,52 +183,57 @@ export default function PlayPage({ params }: PlayPageProps) {
     return engineRef.current?.getCurrentTime() ?? 0;
   }, []);
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-dvh bg-black text-white gap-4 px-6 safe-all">
-        <p className="text-red-400 text-base sm:text-lg text-center">Error: {error}</p>
-        <div className="flex gap-3">
-          <button
-            onClick={() => window.location.reload()}
-            className="h-12 px-6 rounded-full border border-white/20 text-sm hover:bg-white/10 active:bg-white/15"
-          >
-            Retry
-          </button>
-          <Link
-            href="/"
-            className="h-12 px-6 rounded-full border border-white/20 text-sm hover:bg-white/10 active:bg-white/15 flex items-center"
-          >
-            Home
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (phase === "loading" && !showHowToPlay) {
-    return (
-      <GameLoadingScreen
-        blockNumber={Number(blockNumber)}
-        status={loadingStatus}
-      />
-    );
-  }
-
-  if (phase === "finished" && finalScore) {
-    return (
-      <GameOverScreen
-        finalScore={finalScore}
-        onPlayAgain={handlePlayAgain}
-      />
-    );
-  }
-
+  // IMPORTANT: Always render the container div so containerRef is available
+  // when the GameEngine loads. Previously, early returns during "loading" phase
+  // meant the ref was null and touch input was never set up on mobile.
   return (
     <div
       ref={containerRef}
       className={`relative w-full h-dvh bg-black overflow-hidden select-none ${isShaking ? "animate-screen-shake" : ""}`}
       style={{ touchAction: "none" }}
     >
+      {/* Error state */}
+      {error && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center text-white gap-4 px-6 safe-all">
+          <p className="text-red-400 text-base sm:text-lg text-center">Error: {error}</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="h-12 px-6 rounded-full border border-white/20 text-sm hover:bg-white/10 active:bg-white/15"
+            >
+              Retry
+            </button>
+            <Link
+              href="/"
+              className="h-12 px-6 rounded-full border border-white/20 text-sm hover:bg-white/10 active:bg-white/15 flex items-center"
+            >
+              Home
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Loading state — rendered INSIDE the container so ref stays alive */}
+      {phase === "loading" && !showHowToPlay && !error && (
+        <div className="absolute inset-0 z-40">
+          <GameLoadingScreen
+            blockNumber={Number(blockNumber)}
+            status={loadingStatus}
+          />
+        </div>
+      )}
+
+      {/* Game over state */}
+      {phase === "finished" && finalScore && (
+        <div className="absolute inset-0 z-40">
+          <GameOverScreen
+            finalScore={finalScore}
+            onPlayAgain={handlePlayAgain}
+          />
+        </div>
+      )}
+
+      {/* Game canvas and HUD — always mounted when chart exists */}
       {chart && (
         <>
           <GameCanvas
@@ -238,23 +242,24 @@ export default function PlayPage({ params }: PlayPageProps) {
             isPlaying={phase === "playing"}
           />
           <GameHUD state={gameState} onVolumeChange={handleVolumeChange} />
-          <MobileTouchZones />
         </>
       )}
 
       {/* Back button - top-left, below volume — 44px tap target */}
-      <Link
-        href="/"
-        className="absolute z-20 flex items-center justify-center h-11 px-3 text-white/30 hover:text-white/60 active:text-white/80 transition-colors text-xs font-[family-name:var(--font-roobert)]"
-        data-game-ui
-        style={{
-          touchAction: "auto",
-          top: "calc(env(safe-area-inset-top, 0px) + 40px)",
-          left: "4px",
-        }}
-      >
-        &larr; Back
-      </Link>
+      {phase !== "loading" && phase !== "finished" && !error && (
+        <Link
+          href="/"
+          className="absolute z-20 flex items-center justify-center h-11 px-3 text-white/30 hover:text-white/60 active:text-white/80 transition-colors text-xs font-[family-name:var(--font-roobert)]"
+          data-game-ui
+          style={{
+            touchAction: "auto",
+            top: "calc(env(safe-area-inset-top, 0px) + 40px)",
+            left: "4px",
+          }}
+        >
+          &larr; Back
+        </Link>
+      )}
 
       {/* Countdown overlay */}
       {phase === "countdown" && countdown > 0 && (

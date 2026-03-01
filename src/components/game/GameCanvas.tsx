@@ -79,8 +79,23 @@ export function GameCanvas({ chart, getCurrentTime, isPlaying }: GameCanvasProps
         }
       }
 
+      // Detect mobile (no keyboard labels needed)
+      const isMobile = width < 500;
+
+      // Draw lane glow zones below hit line on mobile (tap guidance)
+      if (isMobile) {
+        for (let i = 0; i < LANE_COUNT; i++) {
+          const laneLeft = canvasPadding + i * laneWidth;
+          const gradient = ctx.createLinearGradient(0, hitY, 0, height);
+          gradient.addColorStop(0, LANE_COLORS[i] + "08");
+          gradient.addColorStop(0.4, LANE_COLORS[i] + "12");
+          gradient.addColorStop(1, LANE_COLORS[i] + "04");
+          ctx.fillStyle = gradient;
+          ctx.fillRect(laneLeft, hitY, laneWidth, height - hitY);
+        }
+      }
+
       // Draw hit zone targets with flash effect
-      const labelFontSize = width < 500 ? 11 : 14;
       for (let i = 0; i < LANE_COUNT; i++) {
         const x = canvasPadding + i * laneWidth + laneWidth / 2;
         const flash = laneFlash[i];
@@ -110,19 +125,21 @@ export function GameCanvas({ chart, getCurrentTime, isPlaying }: GameCanvasProps
           ctx.globalAlpha = 1;
         }
 
-        // Base target ring (always visible)
-        ctx.strokeStyle = LANE_COLORS[i] + "40";
-        ctx.lineWidth = 2;
+        // Base target ring (always visible, slightly brighter on mobile)
+        ctx.strokeStyle = LANE_COLORS[i] + (isMobile ? "60" : "40");
+        ctx.lineWidth = isMobile ? 2.5 : 2;
         ctx.beginPath();
         ctx.arc(x, hitY, noteSize / 2 + 4, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Lane label
-        ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
-        ctx.font = `bold ${labelFontSize}px monospace`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(LANE_LABELS[i], x, hitY + noteSize / 2 + 16);
+        // Lane label — keyboard keys on desktop, nothing on mobile (circles are enough)
+        if (!isMobile) {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+          ctx.font = "bold 14px monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(LANE_LABELS[i], x, hitY + noteSize / 2 + 16);
+        }
       }
 
       // Draw notes with fade-in
