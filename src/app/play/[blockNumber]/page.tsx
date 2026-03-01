@@ -5,12 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GameEngine } from "@/lib/game/GameEngine";
 import type { GameEvent } from "@/lib/game/GameEngine";
-import type { BeatChart, FinalScore, GamePhase, HitResult, GameState } from "@/lib/game/types";
+import type { BeatChart, FinalScore, GamePhase, GameState } from "@/lib/game/types";
 import { getBlockForGame } from "@/lib/chain/blockData";
 import { generateBeatChart } from "@/lib/game/BlockBeatGenerator";
 import { GameCanvas } from "@/components/game/GameCanvas";
 import { GameHUD } from "@/components/game/GameHUD";
-import { HitFeedback } from "@/components/game/HitFeedback";
 import { GameLoadingScreen } from "@/components/game/GameLoadingScreen";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
 import { PauseOverlay } from "@/components/game/PauseOverlay";
@@ -42,7 +41,6 @@ export default function PlayPage({ params }: PlayPageProps) {
     elapsedTime: 0,
     countdown: 0,
   });
-  const [latestHit, setLatestHit] = useState<HitResult | null>(null);
   const [finalScore, setFinalScore] = useState<FinalScore | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [loadingStatus, setLoadingStatus] = useState("Fetching block data...");
@@ -81,9 +79,6 @@ export default function PlayPage({ params }: PlayPageProps) {
             break;
           case "scoreUpdate":
             setGameState(event.state);
-            break;
-          case "hit":
-            setLatestHit(event.result);
             break;
           case "miss":
             // Trigger screen shake on miss
@@ -164,7 +159,6 @@ export default function PlayPage({ params }: PlayPageProps) {
       elapsedTime: 0,
       countdown: 0,
     });
-    setLatestHit(null);
     startGame();
   }, [startGame]);
 
@@ -244,7 +238,6 @@ export default function PlayPage({ params }: PlayPageProps) {
             isPlaying={phase === "playing"}
           />
           <GameHUD state={gameState} onVolumeChange={handleVolumeChange} />
-          <HitFeedback latestHit={latestHit} />
           <MobileTouchZones />
         </>
       )}

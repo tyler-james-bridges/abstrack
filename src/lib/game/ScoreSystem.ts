@@ -58,6 +58,7 @@ export class ScoreSystem {
     if (!bestNote) return null;
 
     bestNote.hit = true;
+    bestNote.hitTime = performance.now();
     const absOffset = Math.abs(bestOffset);
 
     let grade: TimingGrade;
@@ -111,6 +112,7 @@ export class ScoreSystem {
       if (currentTime - note.time > windowSec) {
         note.hit = true;
         note.grade = "miss";
+        note.hitTime = performance.now();
         this.combo = 0;
         this.gradeCounts.miss++;
 

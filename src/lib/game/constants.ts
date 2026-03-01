@@ -1,10 +1,11 @@
 import type { Lane, TimingGrade, LetterGrade } from "./types";
 
 // Timing windows (in milliseconds)
+// Widened from 25/50/100 to account for browser input latency (~8-16ms jitter)
 export const TIMING_WINDOWS: Record<TimingGrade, number> = {
-  perfect: 25,
-  great: 50,
-  good: 100,
+  perfect: 45,
+  great: 90,
+  good: 150,
   miss: Infinity,
 };
 

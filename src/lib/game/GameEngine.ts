@@ -166,7 +166,7 @@ export class GameEngine {
     const result = this.scoreSystem.judge(gameTime, input.lane, this.chart.notes);
 
     if (result) {
-      this.audioEngine.playHitSound(input.lane);
+      this.audioEngine.playHitSound(input.lane, result.grade);
       this.emit({ type: "hit", result });
       this.emitScoreUpdate();
     }
@@ -183,6 +183,7 @@ export class GameEngine {
       this.chart.notes
     );
     if (missResults.length > 0) {
+      this.audioEngine.playMissSound();
       this.emit({ type: "miss", results: missResults });
       this.emitScoreUpdate();
     }

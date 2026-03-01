@@ -15,6 +15,8 @@ export interface Note {
   hit: boolean;
   /** The grade assigned after judgment */
   grade?: TimingGrade;
+  /** performance.now() timestamp when the note was judged (for hit animations) */
+  hitTime?: number;
 }
 
 export interface BeatChart {
