@@ -8,6 +8,7 @@ import { RecentBlocks } from "@/components/home/RecentBlocks";
 import { Leaderboard } from "@/components/home/Leaderboard";
 import { PlayerBestScores } from "@/components/home/PlayerBestScores";
 import { ContractLink } from "@/components/home/ContractLink";
+import { ConnectedState } from "@/components/wallet/ConnectedState";
 
 export default function Home() {
   const { address } = useAccount();
@@ -42,11 +43,9 @@ export default function Home() {
             <PlayerBestScores />
             <Leaderboard />
 
-            {/* Connected indicator + contract link */}
+            {/* Connected indicator + disconnect + contract link */}
             <div className="mt-8 flex flex-col items-center gap-2">
-              <p className="text-xs text-white/30 font-mono">
-                {address.slice(0, 6)}...{address.slice(-4)}
-              </p>
+              <ConnectedState />
               <ContractLink />
             </div>
           </>
