@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 import { LANE_COLORS, LANE_LABELS } from "@/lib/game/constants";
 
 interface HowToPlayOverlayProps {
@@ -20,6 +20,15 @@ export function markHowToPlaySeen(): void {
 }
 
 export function HowToPlayOverlay({ onDismiss }: HowToPlayOverlayProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Detect touch device
+    setIsMobile(
+      "ontouchstart" in window || navigator.maxTouchPoints > 0
+    );
+  }, []);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " " || e.key === "Escape") {
@@ -36,8 +45,12 @@ export function HowToPlayOverlay({ onDismiss }: HowToPlayOverlayProps) {
   }, [handleKeyDown]);
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" data-game-ui style={{ touchAction: "auto" }}>
-      <div className="w-full max-w-sm flex flex-col items-center gap-6">
+    <div
+      className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 overflow-y-auto safe-all"
+      data-game-ui
+      style={{ touchAction: "auto" }}
+    >
+      <div className="w-full max-w-sm flex flex-col items-center gap-4 sm:gap-6 py-4">
         {/* Title */}
         <h2
           className="text-2xl sm:text-3xl font-bold text-white font-[family-name:var(--font-roobert)]"
@@ -46,61 +59,97 @@ export function HowToPlayOverlay({ onDismiss }: HowToPlayOverlayProps) {
           How to Play
         </h2>
 
-        {/* Lane keys */}
-        <div className="w-full">
-          <p className="text-xs text-white/40 uppercase tracking-widest text-center mb-3">
-            Hit the keys as notes reach the line
-          </p>
-          <div className="flex justify-center gap-3 sm:gap-4">
-            {LANE_LABELS.map((label, i) => (
-              <div key={label} className="flex flex-col items-center gap-2">
-                <div
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg border-2 flex items-center justify-center text-lg sm:text-xl font-bold font-mono"
-                  style={{
-                    borderColor: LANE_COLORS[i],
-                    color: LANE_COLORS[i],
-                    background: LANE_COLORS[i] + "15",
-                    boxShadow: `0 0 12px ${LANE_COLORS[i]}30`,
-                  }}
-                >
-                  {label}
+        {/* Mobile: show touch instructions prominently */}
+        {isMobile ? (
+          <div className="w-full">
+            <p className="text-xs text-white/40 uppercase tracking-widest text-center mb-3">
+              Tap the lanes as notes reach the line
+            </p>
+            <div className="flex justify-center gap-2">
+              {LANE_LABELS.map((label, i) => (
+                <div key={label} className="flex flex-col items-center gap-1.5">
+                  <div
+                    className="w-14 h-14 rounded-xl border-2 flex items-center justify-center text-xl font-bold font-mono"
+                    style={{
+                      borderColor: LANE_COLORS[i],
+                      color: LANE_COLORS[i],
+                      background: LANE_COLORS[i] + "15",
+                      boxShadow: `0 0 12px ${LANE_COLORS[i]}30`,
+                    }}
+                  >
+                    {label}
+                  </div>
+                  <span className="text-[10px] text-white/30">
+                    {["Kick", "Snare", "Hi-hat", "Melody"][i]}
+                  </span>
                 </div>
-                <span className="text-[10px] text-white/30">
-                  {["Kick", "Snare", "Hi-hat", "Melody"][i]}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
+            <p className="text-xs text-white/40 text-center mt-3">
+              Tap anywhere in a lane column to hit notes.
+              <br />
+              The bottom of the screen is your tap zone.
+            </p>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Desktop: show keyboard controls */}
+            <div className="w-full">
+              <p className="text-xs text-white/40 uppercase tracking-widest text-center mb-3">
+                Hit the keys as notes reach the line
+              </p>
+              <div className="flex justify-center gap-3 sm:gap-4">
+                {LANE_LABELS.map((label, i) => (
+                  <div key={label} className="flex flex-col items-center gap-2">
+                    <div
+                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg border-2 flex items-center justify-center text-lg sm:text-xl font-bold font-mono"
+                      style={{
+                        borderColor: LANE_COLORS[i],
+                        color: LANE_COLORS[i],
+                        background: LANE_COLORS[i] + "15",
+                        boxShadow: `0 0 12px ${LANE_COLORS[i]}30`,
+                      }}
+                    >
+                      {label}
+                    </div>
+                    <span className="text-[10px] text-white/30">
+                      {["Kick", "Snare", "Hi-hat", "Melody"][i]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-        {/* Arrow keys alternative */}
-        <p className="text-xs text-white/30 text-center">
-          Arrow keys also work:
-          <span className="font-mono text-white/50 ml-1">
-            Left / Down / Up / Right
-          </span>
-        </p>
+            {/* Arrow keys alternative */}
+            <p className="text-xs text-white/30 text-center">
+              Arrow keys also work:
+              <span className="font-mono text-white/50 ml-1">
+                Left / Down / Up / Right
+              </span>
+            </p>
+          </>
+        )}
 
         {/* Timing grades */}
         <div className="w-full">
-          <p className="text-xs text-white/40 uppercase tracking-widest text-center mb-3">
+          <p className="text-xs text-white/40 uppercase tracking-widest text-center mb-2 sm:mb-3">
             Timing Grades
           </p>
-          <div className="flex justify-center gap-4 text-center">
+          <div className="flex justify-center gap-3 sm:gap-4 text-center">
             <div>
-              <p className="text-sm font-bold" style={{ color: "#ffd700" }}>PERFECT</p>
+              <p className="text-xs sm:text-sm font-bold" style={{ color: "#ffd700" }}>PERFECT</p>
               <p className="text-[10px] text-white/30">+1000</p>
             </div>
             <div>
-              <p className="text-sm font-bold" style={{ color: "#4ecdc4" }}>GREAT</p>
+              <p className="text-xs sm:text-sm font-bold" style={{ color: "#4ecdc4" }}>GREAT</p>
               <p className="text-[10px] text-white/30">+600</p>
             </div>
             <div>
-              <p className="text-sm font-bold" style={{ color: "#45b7d1" }}>GOOD</p>
+              <p className="text-xs sm:text-sm font-bold" style={{ color: "#45b7d1" }}>GOOD</p>
               <p className="text-[10px] text-white/30">+300</p>
             </div>
             <div>
-              <p className="text-sm font-bold" style={{ color: "#ff6b6b" }}>MISS</p>
+              <p className="text-xs sm:text-sm font-bold" style={{ color: "#ff6b6b" }}>MISS</p>
               <p className="text-[10px] text-white/30">+0</p>
             </div>
           </div>
@@ -111,23 +160,29 @@ export function HowToPlayOverlay({ onDismiss }: HowToPlayOverlayProps) {
           <p className="text-xs text-white/50 leading-relaxed text-center">
             Build combos for score multipliers.
             <br />
-            Press <kbd className="px-1 py-0.5 rounded bg-white/10 text-white/60 font-mono text-[10px]">Esc</kbd> to pause during play.
-            <br />
-            On mobile, tap the lane zones at the bottom.
+            {isMobile ? (
+              <>Tap the pause button at the top to pause.</>
+            ) : (
+              <>
+                Press <kbd className="px-1 py-0.5 rounded bg-white/10 text-white/60 font-mono text-[10px]">Esc</kbd> to pause during play.
+              </>
+            )}
           </p>
         </div>
 
-        {/* Dismiss button */}
+        {/* Dismiss button — nice large touch target */}
         <button
           onClick={onDismiss}
-          className="w-full max-w-xs h-12 rounded-full bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 transition-opacity font-[family-name:var(--font-roobert)]"
+          className="w-full max-w-xs h-12 rounded-full bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)]"
         >
-          Got it!
+          Got it — Let&apos;s Play!
         </button>
 
-        <p className="text-[10px] text-white/20">
-          Press <kbd className="font-mono">Enter</kbd> or <kbd className="font-mono">Space</kbd> to start
-        </p>
+        {!isMobile && (
+          <p className="text-[10px] text-white/20">
+            Press <kbd className="font-mono">Enter</kbd> or <kbd className="font-mono">Space</kbd> to start
+          </p>
+        )}
       </div>
     </div>
   );

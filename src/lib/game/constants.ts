@@ -80,6 +80,23 @@ export const NOTE_SPEED = 400; // pixels per second
 export const HIT_ZONE_Y = 0.85; // 85% from top
 export const NOTE_SIZE = 48;
 export const CANVAS_PADDING = 40;
+export const CANVAS_PADDING_MOBILE = 12;
+
+/** Returns the correct canvas padding for the given viewport width. */
+export function getCanvasPadding(viewportWidth: number): number {
+  return viewportWidth < 500 ? CANVAS_PADDING_MOBILE : CANVAS_PADDING;
+}
+
+/** Returns the pixel-width of a single lane given viewport width. */
+export function getLaneWidth(viewportWidth: number): number {
+  const padding = getCanvasPadding(viewportWidth);
+  return (viewportWidth - padding * 2) / LANE_COUNT;
+}
+
+/** Returns the note size appropriate for the viewport width. */
+export function getNoteSize(viewportWidth: number): number {
+  return viewportWidth < 500 ? 36 : NOTE_SIZE;
+}
 
 // Countdown
 export const COUNTDOWN_DURATION = 3; // seconds

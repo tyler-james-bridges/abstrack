@@ -1,5 +1,5 @@
 import type { Lane, LaneInput } from "./types";
-import { LANE_KEYS } from "./constants";
+import { LANE_KEYS, LANE_COUNT, getCanvasPadding } from "./constants";
 
 type InputCallback = (input: LaneInput) => void;
 
@@ -89,6 +89,7 @@ export class InputHandler {
           const touch = e.changedTouches[i];
           const lane = this.touchToLane(touch, touchElement);
           if (lane !== null) {
+            this.haptic();
             this.callback?.({
               lane,
               timestamp: performance.now(),
@@ -127,10 +128,30 @@ export class InputHandler {
   private touchToLane(touch: Touch, element: HTMLElement): Lane | null {
     const rect = element.getBoundingClientRect();
     const x = touch.clientX - rect.left;
-    const laneWidth = rect.width / 4;
-    const lane = Math.floor(x / laneWidth);
-    if (lane < 0 || lane > 3) return null;
+    const padding = getCanvasPadding(rect.width);
+    // Map touch x to the padded lane area (same coordinates as GameCanvas)
+    const laneAreaX = x - padding;
+    const laneAreaWidth = rect.width - padding * 2;
+    if (laneAreaX < 0 || laneAreaX >= laneAreaWidth) {
+      // Touch is in the padding zone — snap to nearest edge lane
+      if (x < rect.width / 2) return 0 as Lane;
+      return (LANE_COUNT - 1) as Lane;
+    }
+    const laneWidth = laneAreaWidth / LANE_COUNT;
+    const lane = Math.floor(laneAreaX / laneWidth);
+    if (lane < 0 || lane >= LANE_COUNT) return null;
     return lane as Lane;
+  }
+
+  /** Fire a short haptic pulse on supported devices. */
+  private haptic(): void {
+    try {
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(8);
+      }
+    } catch {
+      // Vibrate API may throw in some contexts — ignore silently.
+    }
   }
 
   stop(): void {

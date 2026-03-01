@@ -93,7 +93,7 @@ export function PlayerBestScores() {
           {scores.map((entry) => (
             <div
               key={entry.blockNumber.toString()}
-              className="flex items-center justify-between p-3 bg-white/3 border border-white/5 rounded-lg"
+              className="flex items-center justify-between p-3 min-h-[52px] bg-white/3 border border-white/5 rounded-lg"
             >
               <div>
                 <a

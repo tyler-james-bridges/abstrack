@@ -51,7 +51,7 @@ export function RecentBlocks() {
               <button
                 key={block.number.toString()}
                 onClick={() => router.push(`/play/${block.number}`)}
-                className="w-full flex items-center justify-between p-3 bg-white/3 hover:bg-white/8 border border-white/5 rounded-lg transition-colors group"
+                className="w-full flex items-center justify-between p-3 sm:p-3 min-h-[52px] bg-white/3 hover:bg-white/8 active:bg-white/10 border border-white/5 rounded-lg transition-colors group"
               >
                 <div className="text-left">
                   <div className="flex items-center gap-2">
@@ -75,8 +75,8 @@ export function RecentBlocks() {
                     </p>
                   </div>
                 </div>
-                <span className="text-xs text-[#4ecdc4] opacity-0 group-hover:opacity-100 transition-opacity font-[family-name:var(--font-roobert)]">
-                  Play
+                <span className="text-xs text-[#4ecdc4] opacity-60 sm:opacity-0 group-hover:opacity-100 transition-opacity font-[family-name:var(--font-roobert)]">
+                  Play &rarr;
                 </span>
               </button>
             );

@@ -47,16 +47,17 @@ export function BlockPicker() {
         <div className="flex gap-2 mb-4">
           <input
             type="number"
+            inputMode="numeric"
             value={blockInput}
             onChange={(e) => setBlockInput(e.target.value)}
             placeholder="Enter block number..."
-            className="flex-1 h-10 px-3 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#4ecdc4]/50 font-mono"
+            className="flex-1 h-12 px-4 bg-white/5 border border-white/10 rounded-lg text-white text-base placeholder:text-white/30 focus:outline-none focus:border-[#4ecdc4]/50 font-mono"
             onKeyDown={(e) => e.key === "Enter" && handlePlay()}
           />
           <button
             onClick={handlePlay}
             disabled={!blockInput || loading}
-            className="h-10 px-4 rounded-lg bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity font-[family-name:var(--font-roobert)]"
+            className="h-12 px-5 rounded-lg bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity font-[family-name:var(--font-roobert)]"
           >
             Play
           </button>
@@ -67,14 +68,14 @@ export function BlockPicker() {
           <button
             onClick={handlePlayLatest}
             disabled={loading}
-            className="flex-1 h-10 rounded-lg border border-white/10 text-white/80 text-sm hover:bg-white/5 transition-colors disabled:opacity-50 font-[family-name:var(--font-roobert)]"
+            className="flex-1 h-12 rounded-lg border border-white/10 text-white/80 text-sm hover:bg-white/5 active:bg-white/10 transition-colors disabled:opacity-50 font-[family-name:var(--font-roobert)]"
           >
             {loading ? "Loading..." : "Play Latest"}
           </button>
           <button
             onClick={handleRandomBlock}
             disabled={loading}
-            className="flex-1 h-10 rounded-lg border border-white/10 text-white/80 text-sm hover:bg-white/5 transition-colors disabled:opacity-50 font-[family-name:var(--font-roobert)]"
+            className="flex-1 h-12 rounded-lg border border-white/10 text-white/80 text-sm hover:bg-white/5 active:bg-white/10 transition-colors disabled:opacity-50 font-[family-name:var(--font-roobert)]"
           >
             {loading ? "Loading..." : "Random Block"}
           </button>

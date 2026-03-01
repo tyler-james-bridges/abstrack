@@ -14,7 +14,7 @@ export function ConnectedState() {
         {address.slice(0, 6)}...{address.slice(-4)}
       </p>
       <button
-        className="text-xs text-white/40 hover:text-white/70 transition-colors font-[family-name:var(--font-roobert)]"
+        className="text-xs text-white/40 hover:text-white/70 active:text-white/90 transition-colors font-[family-name:var(--font-roobert)] min-h-[44px] px-2"
         onClick={logout}
       >
         Disconnect

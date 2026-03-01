@@ -8,8 +8,9 @@ import {
   LANE_LABELS,
   NOTE_SPEED,
   HIT_ZONE_Y,
-  NOTE_SIZE,
   GRADE_COLORS,
+  getCanvasPadding,
+  getNoteSize,
 } from "@/lib/game/constants";
 import type { TimingGrade } from "@/lib/game/types";
 
@@ -34,10 +35,9 @@ export function GameCanvas({ chart, getCurrentTime, isPlaying }: GameCanvasProps
     (ctx: CanvasRenderingContext2D, width: number, height: number) => {
       const currentTime = getCurrentTime();
       const now = performance.now();
-      // Responsive padding: smaller on narrow screens
-      const canvasPadding = width < 500 ? 12 : 40;
-      // Responsive note size
-      const noteSize = width < 500 ? 36 : NOTE_SIZE;
+      // Responsive padding & note size via shared helpers (must match InputHandler)
+      const canvasPadding = getCanvasPadding(width);
+      const noteSize = getNoteSize(width);
       const laneWidth = (width - canvasPadding * 2) / LANE_COUNT;
       const hitY = height * HIT_ZONE_Y;
 

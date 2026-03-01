@@ -19,7 +19,7 @@ export function SignInButton() {
 
   return (
     <button
-      className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] hover:text-white hover:cursor-pointer dark:hover:bg-[#e0e0e0] dark:hover:text-black text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 font-[family-name:var(--font-roobert)]"
+      className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] hover:text-white hover:cursor-pointer active:scale-95 dark:hover:bg-[#e0e0e0] dark:hover:text-black text-sm sm:text-base h-12 sm:h-12 px-5 sm:px-5 font-[family-name:var(--font-roobert)]"
       onClick={login}
     >
       <Image

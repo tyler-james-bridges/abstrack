@@ -16,11 +16,11 @@ export default function Home() {
     <div className="relative min-h-screen bg-black overflow-hidden">
       <BackgroundEffects />
 
-      <main className="relative z-10 flex flex-col items-center px-4 py-12 sm:py-20 text-white">
+      <main className="relative z-10 flex flex-col items-center px-4 py-8 sm:py-20 text-white safe-all">
         {/* Logo / Branding */}
-        <div className="flex flex-col items-center gap-3 mb-10">
+        <div className="flex flex-col items-center gap-2 sm:gap-3 mb-6 sm:mb-10">
           <h1
-            className="text-6xl sm:text-7xl font-black tracking-tighter font-[family-name:var(--font-roobert)]"
+            className="text-5xl sm:text-7xl font-black tracking-tighter font-[family-name:var(--font-roobert)]"
             style={{
               background: "linear-gradient(135deg, #4ecdc4, #45b7d1, #ffd700)",
               WebkitBackgroundClip: "text",

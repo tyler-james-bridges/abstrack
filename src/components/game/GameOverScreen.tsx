@@ -196,17 +196,21 @@ export function GameOverScreen({
   const accuracy = (finalScore.accuracy * 100).toFixed(1);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
-      <div className="w-full max-w-md">
+    <div
+      className="flex flex-col items-center min-h-dvh bg-black text-white overflow-y-auto safe-all"
+    >
+      {/* Scrollable content wrapper — centers vertically on tall screens,
+          scrolls naturally on short / mobile screens */}
+      <div className="w-full max-w-md mx-auto px-4 py-6 sm:py-10 flex flex-col items-center justify-center flex-1">
         {/* Letter Grade */}
         <div
-          className={`text-center mb-8 p-8 rounded-2xl bg-gradient-to-b ${GRADE_BG_COLORS[finalScore.letterGrade]} border border-white/10 backdrop-blur-sm`}
+          className={`w-full text-center mb-5 sm:mb-8 p-5 sm:p-8 rounded-2xl bg-gradient-to-b ${GRADE_BG_COLORS[finalScore.letterGrade]} border border-white/10 backdrop-blur-sm`}
         >
-          <p className="text-sm text-white/50 uppercase tracking-widest mb-2">
+          <p className="text-xs sm:text-sm text-white/50 uppercase tracking-widest mb-1 sm:mb-2">
             Rank
           </p>
           <p
-            className="text-8xl font-black"
+            className="text-6xl sm:text-8xl font-black"
             style={{
               textShadow:
                 finalScore.letterGrade === "S"
@@ -219,41 +223,41 @@ export function GameOverScreen({
         </div>
 
         {/* Score */}
-        <div className="text-center mb-6">
-          <p className="text-4xl font-bold font-mono tabular-nums">
+        <div className="text-center mb-4 sm:mb-6">
+          <p className="text-3xl sm:text-4xl font-bold font-mono tabular-nums">
             {finalScore.totalScore.toLocaleString()}
           </p>
-          <p className="text-sm text-white/40 mt-1">
+          <p className="text-xs sm:text-sm text-white/40 mt-1">
             / {MAX_SCORE.toLocaleString()}
           </p>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="w-full grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
           <div className="bg-white/5 rounded-lg p-3 text-center border border-white/10">
-            <p className="text-xs text-white/40 uppercase">Max Combo</p>
-            <p className="text-xl font-bold">{finalScore.maxCombo}</p>
+            <p className="text-[10px] sm:text-xs text-white/40 uppercase">Max Combo</p>
+            <p className="text-lg sm:text-xl font-bold">{finalScore.maxCombo}</p>
           </div>
           <div className="bg-white/5 rounded-lg p-3 text-center border border-white/10">
-            <p className="text-xs text-white/40 uppercase">Accuracy</p>
-            <p className="text-xl font-bold">{accuracy}%</p>
+            <p className="text-[10px] sm:text-xs text-white/40 uppercase">Accuracy</p>
+            <p className="text-lg sm:text-xl font-bold">{accuracy}%</p>
           </div>
         </div>
 
         {/* Grade Breakdown */}
-        <div className="flex justify-between gap-2 mb-8">
+        <div className="w-full grid grid-cols-4 gap-1.5 sm:gap-2 mb-5 sm:mb-8">
           {(["perfect", "great", "good", "miss"] as const).map((grade) => (
             <div
               key={grade}
-              className="flex-1 text-center bg-white/5 rounded-lg p-2 border border-white/5"
+              className="text-center bg-white/5 rounded-lg p-2 border border-white/5"
             >
               <p
-                className="text-xs font-bold uppercase"
+                className="text-[10px] sm:text-xs font-bold uppercase"
                 style={{ color: GRADE_COLORS[grade] }}
               >
                 {grade}
               </p>
-              <p className="text-lg font-bold">
+              <p className="text-base sm:text-lg font-bold">
                 {finalScore.gradeCounts[grade]}
               </p>
             </div>
@@ -261,24 +265,24 @@ export function GameOverScreen({
         </div>
 
         {/* Block info */}
-        <p className="text-center text-xs text-white/30 mb-6">
+        <p className="text-center text-xs text-white/30 mb-4 sm:mb-6">
           Block #{finalScore.blockNumber} | {finalScore.totalNotes} notes
         </p>
 
         {/* Error display */}
         {displayError && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <div className="w-full mb-3 sm:mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
             <p className="text-sm text-red-400">{displayError}</p>
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex flex-col gap-3">
+        <div className="w-full flex flex-col gap-3">
           {address && !receipt && (
             <button
               onClick={handleSubmitScore}
               disabled={isSubmitting || submitted || !validation.valid}
-              className="w-full h-12 rounded-full bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-roobert)]"
+              className="w-full h-12 sm:h-12 rounded-full bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-roobert)]"
             >
               {isSubmitting
                 ? "Submitting..."
@@ -297,7 +301,7 @@ export function GameOverScreen({
                 setSubmitted(false);
                 setSubmissionError(null);
               }}
-              className="w-full h-10 rounded-full border border-red-500/30 text-red-400 text-sm hover:bg-red-500/10 transition-colors font-[family-name:var(--font-roobert)]"
+              className="w-full h-12 rounded-full border border-red-500/30 text-red-400 text-sm hover:bg-red-500/10 active:bg-red-500/20 transition-colors font-[family-name:var(--font-roobert)]"
             >
               Try Again
             </button>
@@ -321,21 +325,21 @@ export function GameOverScreen({
 
           <button
             onClick={onPlayAgain}
-            className="w-full h-12 rounded-full border border-white/20 text-white font-bold text-sm hover:bg-white/10 transition-colors font-[family-name:var(--font-roobert)]"
+            className="w-full h-12 rounded-full border border-white/20 text-white font-bold text-sm hover:bg-white/10 active:bg-white/15 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)]"
           >
             Play Again
           </button>
 
           <button
             onClick={() => router.push("/")}
-            className="w-full h-10 text-white/50 text-sm hover:text-white/80 transition-colors font-[family-name:var(--font-roobert)]"
+            className="w-full h-12 text-white/50 text-sm hover:text-white/80 active:text-white transition-colors font-[family-name:var(--font-roobert)]"
           >
             Home
           </button>
         </div>
 
-        {/* Keyboard shortcuts */}
-        <div className="flex justify-center gap-4 mt-2 text-[10px] text-white/20">
+        {/* Keyboard shortcuts — hide on mobile since they don't apply */}
+        <div className="hidden sm:flex justify-center gap-4 mt-3 text-[10px] text-white/20">
           <span>
             <kbd className="px-1 py-0.5 rounded bg-white/5 text-white/30 font-mono">
               R

@@ -186,18 +186,18 @@ export default function PlayPage({ params }: PlayPageProps) {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white gap-4">
-        <p className="text-red-400 text-lg">Error: {error}</p>
+      <div className="flex flex-col items-center justify-center min-h-dvh bg-black text-white gap-4 px-6 safe-all">
+        <p className="text-red-400 text-base sm:text-lg text-center">Error: {error}</p>
         <div className="flex gap-3">
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-2 rounded-full border border-white/20 text-sm hover:bg-white/10"
+            className="h-12 px-6 rounded-full border border-white/20 text-sm hover:bg-white/10 active:bg-white/15"
           >
             Retry
           </button>
           <Link
             href="/"
-            className="px-6 py-2 rounded-full border border-white/20 text-sm hover:bg-white/10"
+            className="h-12 px-6 rounded-full border border-white/20 text-sm hover:bg-white/10 active:bg-white/15 flex items-center"
           >
             Home
           </Link>
@@ -242,12 +242,16 @@ export default function PlayPage({ params }: PlayPageProps) {
         </>
       )}
 
-      {/* Back button - top-left, below volume */}
+      {/* Back button - top-left, below volume — 44px tap target */}
       <Link
         href="/"
-        className="absolute top-10 left-3 sm:top-12 sm:left-4 z-20 text-white/20 hover:text-white/60 transition-colors text-xs font-[family-name:var(--font-roobert)]"
+        className="absolute z-20 flex items-center justify-center h-11 px-3 text-white/30 hover:text-white/60 active:text-white/80 transition-colors text-xs font-[family-name:var(--font-roobert)]"
         data-game-ui
-        style={{ touchAction: "auto" }}
+        style={{
+          touchAction: "auto",
+          top: "calc(env(safe-area-inset-top, 0px) + 40px)",
+          left: "4px",
+        }}
       >
         &larr; Back
       </Link>
@@ -257,7 +261,7 @@ export default function PlayPage({ params }: PlayPageProps) {
         <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/50" data-game-ui>
           <p
             key={countdown}
-            className="text-7xl sm:text-9xl font-black text-white animate-countdown-pop"
+            className="text-6xl sm:text-9xl font-black text-white animate-countdown-pop"
             style={{
               textShadow: "0 0 40px rgba(78, 205, 196, 0.5)",
             }}
@@ -277,16 +281,19 @@ export default function PlayPage({ params }: PlayPageProps) {
         <HowToPlayOverlay onDismiss={handleDismissHowToPlay} />
       )}
 
-      {/* Mobile pause button */}
+      {/* Mobile pause button — 44px touch target, centered, safe area aware */}
       {phase === "playing" && (
         <button
           onClick={handlePause}
-          className="absolute top-3 left-1/2 -translate-x-1/2 z-20 md:hidden p-2 rounded-full bg-white/5 border border-white/10 text-white/40"
+          className="absolute left-1/2 -translate-x-1/2 z-20 md:hidden flex items-center justify-center w-11 h-11 rounded-full bg-white/5 border border-white/10 text-white/40 active:bg-white/15 active:text-white/70 transition-colors"
           aria-label="Pause"
           data-game-ui
-          style={{ touchAction: "auto" }}
+          style={{
+            touchAction: "auto",
+            top: "calc(env(safe-area-inset-top, 0px) + 8px)",
+          }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
             <rect x="6" y="4" width="4" height="16" rx="1" />
             <rect x="14" y="4" width="4" height="16" rx="1" />
           </svg>

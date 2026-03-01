@@ -123,7 +123,7 @@ export function Leaderboard() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="text-xs text-white/40 hover:text-white/70 transition-colors disabled:opacity-50"
+            className="flex items-center justify-center w-10 h-10 text-white/40 hover:text-white/70 active:text-white/90 transition-colors disabled:opacity-50 rounded-lg"
             title="Refresh leaderboard"
           >
             {refreshing ? (
@@ -131,8 +131,8 @@ export function Leaderboard() {
             ) : (
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
+                width="18"
+                height="18"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -149,7 +149,7 @@ export function Leaderboard() {
           {scores.map((entry, i) => (
             <div
               key={`${entry.player}-${entry.blockNumber}`}
-              className="flex items-center gap-3 p-3 bg-white/3 border border-white/5 rounded-lg"
+              className="flex items-center gap-3 p-3 min-h-[52px] bg-white/3 border border-white/5 rounded-lg"
             >
               <span
                 className="text-lg font-bold w-8 text-center shrink-0"
