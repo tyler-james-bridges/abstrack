@@ -8,7 +8,6 @@ import { RecentBlocks } from "@/components/home/RecentBlocks";
 import { Leaderboard } from "@/components/home/Leaderboard";
 import { PlayerBestScores } from "@/components/home/PlayerBestScores";
 import { ContractLink } from "@/components/home/ContractLink";
-import { ConnectedState } from "@/components/wallet/ConnectedState";
 
 export default function Home() {
   const { address } = useAccount();
@@ -17,7 +16,7 @@ export default function Home() {
     <div className="relative min-h-screen bg-black overflow-hidden">
       <BackgroundEffects />
 
-      <main className="relative z-10 flex flex-col items-center px-4 py-8 sm:py-20 text-white safe-all">
+      <main className="relative z-10 flex flex-col items-center px-4 pt-16 pb-8 sm:py-20 text-white safe-all">
         {/* Logo / Branding */}
         <div className="flex flex-col items-center gap-2 sm:gap-3 mb-6 sm:mb-10">
           <h1
@@ -43,9 +42,8 @@ export default function Home() {
             <PlayerBestScores />
             <Leaderboard />
 
-            {/* Connected indicator + disconnect + contract link */}
+            {/* Contract link */}
             <div className="mt-8 flex flex-col items-center gap-2">
-              <ConnectedState />
               <ContractLink />
             </div>
           </>
