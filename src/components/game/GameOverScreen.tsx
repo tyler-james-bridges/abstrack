@@ -20,12 +20,20 @@ interface GameOverScreenProps {
   onPlayAgain: () => void;
 }
 
-const GRADE_BG_COLORS: Record<string, string> = {
-  S: "from-yellow-500/20 to-yellow-600/10",
-  A: "from-green-500/20 to-green-600/10",
-  B: "from-blue-500/20 to-blue-600/10",
-  C: "from-purple-500/20 to-purple-600/10",
-  D: "from-red-500/20 to-red-600/10",
+const GRADE_GLOW: Record<string, string> = {
+  S: "0 0 20px #ffd700, 0 0 40px #ffd700, 0 0 80px rgba(255,215,0,0.4)",
+  A: "0 0 15px #4ecdc4, 0 0 30px rgba(78,205,196,0.3)",
+  B: "0 0 10px #45b7d1, 0 0 20px rgba(69,183,209,0.2)",
+  C: "0 0 10px rgba(168,130,255,0.4)",
+  D: "0 0 10px rgba(255,107,107,0.3)",
+};
+
+const GRADE_COLORS_MAP: Record<string, string> = {
+  S: "#ffd700",
+  A: "#4ecdc4",
+  B: "#45b7d1",
+  C: "#a882ff",
+  D: "#ff6b6b",
 };
 
 // ---------------------------------------------------------------------------
@@ -62,21 +70,15 @@ function validateScore(
   return { valid: true, error: null };
 }
 
-/**
- * Parse a user-friendly error message from a contract revert or RPC error.
- */
 function parseSubmissionError(err: unknown): string {
   const message = err instanceof Error ? err.message : String(err);
 
-  // Contract-level reverts
   if (message.includes("New score must be higher")) {
     return "You already have a higher score for this block. Only improvements are recorded on-chain.";
   }
   if (message.includes("Score exceeds maximum")) {
     return "Score exceeds the maximum allowed value (1,000,000).";
   }
-
-  // Wallet-level rejections
   if (
     message.includes("rejected") ||
     message.includes("denied") ||
@@ -84,8 +86,6 @@ function parseSubmissionError(err: unknown): string {
   ) {
     return "Transaction was rejected. You can try again.";
   }
-
-  // RPC errors
   if (message.includes("insufficient funds")) {
     return "Insufficient funds for gas. The paymaster may be out of funds.";
   }
@@ -96,8 +96,6 @@ function parseSubmissionError(err: unknown): string {
   ) {
     return "Network error. Please check your connection and try again.";
   }
-
-  // Fallback: truncate long messages
   if (message.length > 150) {
     return message.slice(0, 147) + "...";
   }
@@ -126,7 +124,6 @@ export function GameOverScreen({
 
   const { data: receipt } = useWaitForTransactionReceipt({ hash: txHash });
 
-  // Keyboard shortcuts
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "r" || e.key === "R") {
@@ -146,13 +143,11 @@ export function GameOverScreen({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  // Client-side validation (runs once)
   const validation = useMemo(
     () => validateScore(finalScore.totalScore, finalScore.blockNumber),
     [finalScore.totalScore, finalScore.blockNumber]
   );
 
-  // Derive error to display from either validation, write error, or manual error
   const displayError = useMemo(() => {
     if (!validation.valid) return validation.error;
     if (submissionError) return submissionError;
@@ -194,53 +189,71 @@ export function GameOverScreen({
   };
 
   const accuracy = (finalScore.accuracy * 100).toFixed(1);
+  const gradeColor = GRADE_COLORS_MAP[finalScore.letterGrade] ?? "#fff";
+  const gradeGlow = GRADE_GLOW[finalScore.letterGrade] ?? "";
 
   return (
-    <div
-      className="flex flex-col items-center min-h-dvh bg-black text-white overflow-y-auto safe-all"
-    >
-      {/* Scrollable content wrapper — centers vertically on tall screens,
-          scrolls naturally on short / mobile screens */}
-      <div className="w-full max-w-md mx-auto px-4 py-6 sm:py-10 flex flex-col items-center justify-center flex-1">
-        {/* Letter Grade */}
-        <div
-          className={`w-full text-center mb-5 sm:mb-8 p-5 sm:p-8 rounded-2xl bg-gradient-to-b ${GRADE_BG_COLORS[finalScore.letterGrade]} border border-white/10 backdrop-blur-sm`}
-        >
-          <p className="text-xs sm:text-sm text-white/50 uppercase tracking-widest mb-1 sm:mb-2">
+    <div className="flex flex-col items-center min-h-dvh bg-black text-white overflow-y-auto safe-all">
+      {/* CRT scanline overlay */}
+      <div className="absolute inset-0 crt-scanlines z-10 pointer-events-none" />
+
+      <div className="w-full max-w-md mx-auto px-4 py-6 sm:py-10 flex flex-col items-center justify-center flex-1 relative z-20">
+        {/* Letter Grade — dramatic neon display */}
+        <div className="w-full text-center mb-5 sm:mb-8 py-8 sm:py-10 relative">
+          {/* Background glow */}
+          <div
+            className="absolute inset-0 rounded-2xl"
+            style={{
+              background: `radial-gradient(ellipse 80% 60% at 50% 50%, ${gradeColor}10, transparent 70%)`,
+              border: `1px solid ${gradeColor}20`,
+            }}
+          />
+          <p className="relative text-[10px] sm:text-xs text-white/40 uppercase tracking-[0.3em] mb-2 font-[family-name:var(--font-avenue-mono)]">
             Rank
           </p>
           <p
-            className="text-6xl sm:text-8xl font-black"
+            className="relative text-7xl sm:text-9xl font-black font-[family-name:var(--font-roobert)]"
             style={{
-              textShadow:
-                finalScore.letterGrade === "S"
-                  ? "0 0 40px #ffd700, 0 0 80px #ffd700"
-                  : "0 0 20px rgba(255,255,255,0.2)",
+              color: gradeColor,
+              textShadow: gradeGlow,
             }}
           >
             {finalScore.letterGrade}
           </p>
         </div>
 
-        {/* Score */}
+        {/* Score — big monospace number */}
         <div className="text-center mb-4 sm:mb-6">
-          <p className="text-3xl sm:text-4xl font-bold font-mono tabular-nums">
+          <p
+            className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-avenue-mono)] tabular-nums"
+            style={{
+              textShadow: "0 0 15px rgba(78,205,196,0.3)",
+            }}
+          >
             {finalScore.totalScore.toLocaleString()}
           </p>
-          <p className="text-xs sm:text-sm text-white/40 mt-1">
+          <p className="text-[10px] sm:text-xs text-white/30 mt-1 font-[family-name:var(--font-avenue-mono)]">
             / {MAX_SCORE.toLocaleString()}
           </p>
         </div>
 
         {/* Stats Grid */}
         <div className="w-full grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
-          <div className="bg-white/5 rounded-lg p-3 text-center border border-white/10">
-            <p className="text-[10px] sm:text-xs text-white/40 uppercase">Max Combo</p>
-            <p className="text-lg sm:text-xl font-bold">{finalScore.maxCombo}</p>
+          <div className="retro-card p-3 text-center">
+            <p className="text-[10px] sm:text-xs text-white/30 uppercase font-[family-name:var(--font-avenue-mono)] tracking-wider">
+              Max Combo
+            </p>
+            <p className="text-lg sm:text-xl font-bold font-[family-name:var(--font-avenue-mono)]">
+              {finalScore.maxCombo}
+            </p>
           </div>
-          <div className="bg-white/5 rounded-lg p-3 text-center border border-white/10">
-            <p className="text-[10px] sm:text-xs text-white/40 uppercase">Accuracy</p>
-            <p className="text-lg sm:text-xl font-bold">{accuracy}%</p>
+          <div className="retro-card p-3 text-center">
+            <p className="text-[10px] sm:text-xs text-white/30 uppercase font-[family-name:var(--font-avenue-mono)] tracking-wider">
+              Accuracy
+            </p>
+            <p className="text-lg sm:text-xl font-bold font-[family-name:var(--font-avenue-mono)]">
+              {accuracy}%
+            </p>
           </div>
         </div>
 
@@ -249,15 +262,19 @@ export function GameOverScreen({
           {(["perfect", "great", "good", "miss"] as const).map((grade) => (
             <div
               key={grade}
-              className="text-center bg-white/5 rounded-lg p-2 border border-white/5"
+              className="text-center rounded-lg p-2 border"
+              style={{
+                borderColor: GRADE_COLORS[grade] + "20",
+                background: GRADE_COLORS[grade] + "08",
+              }}
             >
               <p
-                className="text-[10px] sm:text-xs font-bold uppercase"
+                className="text-[10px] sm:text-xs font-bold uppercase font-[family-name:var(--font-avenue-mono)]"
                 style={{ color: GRADE_COLORS[grade] }}
               >
                 {grade}
               </p>
-              <p className="text-base sm:text-lg font-bold">
+              <p className="text-base sm:text-lg font-bold font-[family-name:var(--font-avenue-mono)]">
                 {finalScore.gradeCounts[grade]}
               </p>
             </div>
@@ -265,7 +282,7 @@ export function GameOverScreen({
         </div>
 
         {/* Block info */}
-        <p className="text-center text-xs text-white/30 mb-4 sm:mb-6">
+        <p className="text-center text-[10px] text-white/25 mb-4 sm:mb-6 font-[family-name:var(--font-avenue-mono)] tracking-wider">
           Block #{finalScore.blockNumber} | {finalScore.totalNotes} notes
         </p>
 
@@ -282,7 +299,10 @@ export function GameOverScreen({
             <button
               onClick={handleSubmitScore}
               disabled={isSubmitting || submitted || !validation.valid}
-              className="w-full h-12 sm:h-12 rounded-full bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-roobert)]"
+              className="neon-btn w-full h-12 sm:h-14 rounded-full bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-roobert)]"
+              style={{
+                boxShadow: "0 0 20px rgba(78,205,196,0.2)",
+              }}
             >
               {isSubmitting
                 ? "Submitting..."
@@ -294,7 +314,6 @@ export function GameOverScreen({
             </button>
           )}
 
-          {/* Retry button shown after an error */}
           {submissionError && !isSubmitting && (
             <button
               onClick={() => {
@@ -308,15 +327,21 @@ export function GameOverScreen({
           )}
 
           {receipt && (
-            <div className="text-center p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-              <p className="text-sm text-green-400 font-medium">
+            <div
+              className="text-center p-3 rounded-lg border"
+              style={{
+                background: "rgba(78,205,196,0.05)",
+                borderColor: "rgba(78,205,196,0.2)",
+              }}
+            >
+              <p className="text-sm text-[#4ecdc4] font-medium font-[family-name:var(--font-roobert)]">
                 Score submitted on-chain!
               </p>
               <a
                 href={abscanTxUrl(receipt.transactionHash)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-blue-400 hover:text-blue-300 underline"
+                className="text-xs text-[#45b7d1]/70 hover:text-[#45b7d1] underline font-[family-name:var(--font-avenue-mono)]"
               >
                 View on Abscan
               </a>
@@ -325,29 +350,29 @@ export function GameOverScreen({
 
           <button
             onClick={onPlayAgain}
-            className="w-full h-12 rounded-full border border-white/20 text-white font-bold text-sm hover:bg-white/10 active:bg-white/15 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)]"
+            className="neon-btn w-full h-12 rounded-full border border-[#4ecdc4]/20 text-[#4ecdc4]/80 font-bold text-sm hover:bg-[#4ecdc4]/5 hover:border-[#4ecdc4]/30 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)]"
           >
             Play Again
           </button>
 
           <button
             onClick={() => router.push("/")}
-            className="w-full h-12 text-white/50 text-sm hover:text-white/80 active:text-white transition-colors font-[family-name:var(--font-roobert)]"
+            className="w-full h-12 text-white/40 text-sm hover:text-white/70 active:text-white transition-colors font-[family-name:var(--font-roobert)]"
           >
             Home
           </button>
         </div>
 
-        {/* Keyboard shortcuts — hide on mobile since they don't apply */}
-        <div className="hidden sm:flex justify-center gap-4 mt-3 text-[10px] text-white/20">
+        {/* Keyboard shortcuts */}
+        <div className="hidden sm:flex justify-center gap-4 mt-3 text-[10px] text-white/20 font-[family-name:var(--font-avenue-mono)]">
           <span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 text-white/30 font-mono">
+            <kbd className="px-1 py-0.5 rounded bg-white/5 text-white/30 border border-white/10">
               R
             </kbd>{" "}
             Replay
           </span>
           <span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 text-white/30 font-mono">
+            <kbd className="px-1 py-0.5 rounded bg-white/5 text-white/30 border border-white/10">
               Esc
             </kbd>{" "}
             Home

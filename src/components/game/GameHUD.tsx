@@ -8,7 +8,6 @@ const VOLUME_STORAGE_KEY = "tempo-volume";
 /** Convert a 0-100 slider value to dB (-60 to 0) */
 function sliderToDb(value: number): number {
   if (value <= 0) return -Infinity;
-  // Logarithmic curve: 0-100 maps to -60..0 dB
   return -60 + (value / 100) * 60;
 }
 
@@ -34,7 +33,6 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
   const [volume, setVolume] = useState<number>(70);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
 
-  // Load stored volume on mount
   useEffect(() => {
     const stored = getStoredVolume();
     setVolume(stored);
@@ -51,23 +49,19 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
     [onVolumeChange]
   );
 
-  // Volume icon based on level
   const volumeIcon =
     volume === 0 ? (
-      // Muted
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
         <line x1="23" y1="9" x2="17" y2="15" />
         <line x1="17" y1="9" x2="23" y2="15" />
       </svg>
     ) : volume < 50 ? (
-      // Low volume
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
         <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
       </svg>
     ) : (
-      // High volume
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
         <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
@@ -77,57 +71,83 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10">
-      {/* Progress bar — sits flush at top, accounts for safe area */}
+      {/* Progress bar — neon glow */}
       <div
-        className="absolute top-0 left-0 right-0 h-1 bg-white/10"
+        className="absolute top-0 left-0 right-0 h-[2px] bg-white/5"
         style={{ marginTop: "env(safe-area-inset-top, 0px)" }}
       >
         <div
-          className="h-full bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] transition-all duration-100"
-          style={{ width: `${progress * 100}%` }}
+          className="h-full transition-all duration-100"
+          style={{
+            width: `${progress * 100}%`,
+            background: "linear-gradient(90deg, #4ecdc4, #45b7d1)",
+            boxShadow: "0 0 8px rgba(78,205,196,0.4), 0 1px 4px rgba(78,205,196,0.2)",
+          }}
         />
       </div>
 
-      {/* Score — top right, pushed down by safe area */}
+      {/* Score — top right, Avenue Mono with glow */}
       <div
         className="absolute right-3 sm:right-4 text-right"
         style={{
           top: "calc(env(safe-area-inset-top, 0px) + 12px)",
         }}
       >
-        <p className="text-lg sm:text-3xl font-bold text-white font-mono tabular-nums leading-tight">
+        <p
+          className="text-lg sm:text-3xl font-bold text-white font-[family-name:var(--font-avenue-mono)] tabular-nums leading-tight"
+          style={{
+            textShadow: "0 0 10px rgba(78,205,196,0.3)",
+            animation: "score-glow 2s ease-in-out infinite",
+          }}
+        >
           {score.toLocaleString()}
         </p>
         {chart && (
-          <p className="text-[10px] sm:text-xs text-white/50 mt-0.5">
-            {chart.bpm} BPM | Block #{chart.blockNumber}
+          <p className="text-[10px] sm:text-xs text-white/40 mt-0.5 font-[family-name:var(--font-avenue-mono)] tracking-wider">
+            {chart.bpm} BPM | #{chart.blockNumber}
           </p>
         )}
       </div>
 
-      {/* Combo — positioned above hit zone for visibility */}
+      {/* Combo — positioned above hit zone */}
       {combo > 1 && (
         <div className="absolute top-[30%] sm:top-1/3 left-1/2 -translate-x-1/2 text-center">
           <p
-            className="text-2xl sm:text-5xl font-black text-white/90 tabular-nums leading-none"
+            className="text-2xl sm:text-5xl font-black text-white/90 tabular-nums leading-none font-[family-name:var(--font-avenue-mono)]"
             style={{
               textShadow:
                 combo >= 50
-                  ? "0 0 30px #ffd700, 0 0 60px #ffd700"
+                  ? "0 0 20px #ffd700, 0 0 40px #ffd700, 0 0 80px rgba(255,215,0,0.3)"
                   : combo >= 25
-                    ? "0 0 20px #4ecdc4"
+                    ? "0 0 15px #4ecdc4, 0 0 30px rgba(78,205,196,0.3)"
                     : "0 0 10px rgba(255,255,255,0.3)",
+              color:
+                combo >= 50
+                  ? "#ffd700"
+                  : combo >= 25
+                    ? "#4ecdc4"
+                    : undefined,
             }}
           >
             {combo}
           </p>
-          <p className="text-[9px] sm:text-sm font-bold text-white/60 tracking-widest uppercase">
+          <p
+            className="text-[9px] sm:text-xs font-bold tracking-[0.3em] uppercase font-[family-name:var(--font-avenue-mono)]"
+            style={{
+              color:
+                combo >= 50
+                  ? "rgba(255,215,0,0.6)"
+                  : combo >= 25
+                    ? "rgba(78,205,196,0.6)"
+                    : "rgba(255,255,255,0.4)",
+            }}
+          >
             combo
           </p>
         </div>
       )}
 
-      {/* Volume control — top left, pushed down by safe area, 44px tap target */}
+      {/* Volume control */}
       <div
         className="absolute left-2 sm:left-4 pointer-events-auto"
         style={{
@@ -138,13 +158,20 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setShowVolumeSlider((v) => !v)}
-            className="flex items-center justify-center w-11 h-11 text-white/40 hover:text-white/70 active:text-white/90 transition-colors rounded-lg"
+            className="flex items-center justify-center w-11 h-11 text-white/40 hover:text-[#4ecdc4] active:text-[#4ecdc4] transition-colors rounded-lg"
             aria-label="Toggle volume"
           >
             {volumeIcon}
           </button>
           {showVolumeSlider && (
-            <div className="flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-full px-3 py-2 border border-white/10">
+            <div
+              className="flex items-center gap-2 rounded-full px-3 py-2"
+              style={{
+                background: "rgba(0,0,0,0.8)",
+                border: "1px solid rgba(78,205,196,0.15)",
+                backdropFilter: "blur(8px)",
+              }}
+            >
               <input
                 type="range"
                 min="0"
@@ -154,7 +181,7 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
                 className="w-20 sm:w-24 h-2 accent-[#4ecdc4] cursor-pointer"
                 aria-label="Volume"
               />
-              <span className="text-[10px] text-white/40 font-mono w-6 text-right tabular-nums">
+              <span className="text-[10px] text-white/40 font-[family-name:var(--font-avenue-mono)] w-6 text-right tabular-nums">
                 {volume}
               </span>
             </div>

@@ -20,12 +20,12 @@ export function RecentBlocks() {
   if (loading) {
     return (
       <div className="w-full max-w-md mx-auto mt-6">
-        <div className="bg-white/5 border border-white/10 rounded-xl p-6 backdrop-blur-sm">
-          <h2 className="text-lg font-bold mb-4 font-[family-name:var(--font-roobert)]">
+        <div className="retro-card p-6">
+          <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#45b7d1]/70 retro-header">
             Recent Blocks
           </h2>
           <div className="flex items-center justify-center py-8">
-            <div className="w-5 h-5 border-2 border-white/20 border-t-[#4ecdc4] rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-[#4ecdc4]/20 border-t-[#4ecdc4]/60 rounded-full animate-spin" />
           </div>
         </div>
       </div>
@@ -36,11 +36,11 @@ export function RecentBlocks() {
 
   return (
     <div className="w-full max-w-md mx-auto mt-6">
-      <div className="bg-white/5 border border-white/10 rounded-xl p-6 backdrop-blur-sm">
-        <h2 className="text-lg font-bold mb-4 font-[family-name:var(--font-roobert)]">
+      <div className="retro-card p-6">
+        <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#45b7d1]/70 retro-header">
           Recent Blocks
         </h2>
-        <div className="space-y-2 max-h-80 overflow-y-auto">
+        <div className="space-y-1.5 max-h-80 overflow-y-auto">
           {blocks.map((block) => {
             const difficulty = estimateDifficulty(
               block.gasUsed,
@@ -51,11 +51,11 @@ export function RecentBlocks() {
               <button
                 key={block.number.toString()}
                 onClick={() => router.push(`/play/${block.number}`)}
-                className="w-full flex items-center justify-between p-3 sm:p-3 min-h-[52px] bg-white/3 hover:bg-white/8 active:bg-white/10 border border-white/5 rounded-lg transition-colors group"
+                className="w-full flex items-center justify-between p-3 min-h-[52px] hover:bg-[#4ecdc4]/5 active:bg-[#4ecdc4]/10 rounded-lg transition-all group border border-transparent hover:border-[#4ecdc4]/10"
               >
                 <div className="text-left">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-mono text-white/80">
+                    <p className="text-sm font-[family-name:var(--font-avenue-mono)] text-white/70 group-hover:text-[#4ecdc4] transition-colors">
                       #{block.number.toString()}
                     </p>
                     <span
@@ -65,18 +65,18 @@ export function RecentBlocks() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-xs text-white/40">
+                    <p className="text-xs text-white/30 font-[family-name:var(--font-avenue-mono)]">
                       {block.transactions.length} txs &middot;{" "}
                       {(Number(block.gasUsed) / 1e6).toFixed(1)}M gas
                     </p>
-                    <span className="text-xs text-white/20">|</span>
-                    <p className="text-xs text-white/30">
+                    <span className="text-xs text-white/15">|</span>
+                    <p className="text-xs text-white/25 font-[family-name:var(--font-avenue-mono)]">
                       {timeAgo(block.timestamp)}
                     </p>
                   </div>
                 </div>
-                <span className="text-xs text-[#4ecdc4] opacity-60 sm:opacity-0 group-hover:opacity-100 transition-opacity font-[family-name:var(--font-roobert)]">
-                  Play &rarr;
+                <span className="text-xs text-[#4ecdc4] opacity-40 group-hover:opacity-100 transition-opacity font-[family-name:var(--font-avenue-mono)]">
+                  PLAY &rarr;
                 </span>
               </button>
             );

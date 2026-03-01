@@ -19,16 +19,17 @@ export function SignInButton() {
 
   return (
     <button
-      className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] hover:text-white hover:cursor-pointer active:scale-95 dark:hover:bg-[#e0e0e0] dark:hover:text-black text-sm sm:text-base h-12 sm:h-12 px-5 sm:px-5 font-[family-name:var(--font-roobert)]"
+      className="neon-btn rounded-full border border-[#4ecdc4]/30 transition-all flex items-center justify-center gap-2.5 bg-[#4ecdc4]/10 text-[#4ecdc4] hover:bg-[#4ecdc4]/20 hover:border-[#4ecdc4]/50 hover:cursor-pointer active:scale-95 text-sm sm:text-base h-12 sm:h-14 px-6 sm:px-8 font-[family-name:var(--font-roobert)] font-bold"
+      style={{
+        boxShadow: "0 0 15px rgba(78,205,196,0.15), inset 0 0 15px rgba(78,205,196,0.05)",
+      }}
       onClick={login}
     >
       <Image
-        className="dark:invert"
-        src="/abs.svg"
+        src="/abs-green.svg"
         alt="Abstract logomark"
         width={20}
         height={20}
-        style={{ filter: "brightness(0)" }}
       />
       Sign in with Abstract
     </button>

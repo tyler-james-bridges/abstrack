@@ -241,6 +241,8 @@ export default function PlayPage({ params }: PlayPageProps) {
             getCurrentTime={getCurrentTime}
             isPlaying={phase === "playing"}
           />
+          {/* CRT scanline overlay on game canvas */}
+          <div className="absolute inset-0 crt-scanlines z-[5]" />
           <GameHUD state={gameState} onVolumeChange={handleVolumeChange} />
         </>
       )}

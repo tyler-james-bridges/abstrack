@@ -153,7 +153,7 @@ export function WalletHeader() {
 
       {/* Dropdown menu */}
       {dropdownOpen && (
-        <div className="absolute right-3 sm:right-4 top-full mt-1 w-64 rounded-xl bg-[#111]/95 border border-white/10 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden wallet-dropdown-enter">
+        <div className="absolute right-3 sm:right-4 top-full mt-1 w-64 rounded-xl bg-[#0a0a12]/95 border border-[#4ecdc4]/15 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden wallet-dropdown-enter">
           {/* Address section */}
           <div className="px-4 pt-4 pb-3 border-b border-white/5">
             <p className="text-[10px] uppercase tracking-wider text-white/30 font-[family-name:var(--font-roobert)] mb-2">

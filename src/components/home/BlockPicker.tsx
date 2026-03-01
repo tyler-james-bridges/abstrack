@@ -38,8 +38,8 @@ export function BlockPicker() {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white/5 border border-white/10 rounded-xl p-6 backdrop-blur-sm">
-        <h2 className="text-lg font-bold mb-4 font-[family-name:var(--font-roobert)]">
+      <div className="retro-card p-6">
+        <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#4ecdc4]/70 retro-header">
           Play a Block
         </h2>
 
@@ -50,14 +50,14 @@ export function BlockPicker() {
             inputMode="numeric"
             value={blockInput}
             onChange={(e) => setBlockInput(e.target.value)}
-            placeholder="Enter block number..."
-            className="flex-1 h-12 px-4 bg-white/5 border border-white/10 rounded-lg text-white text-base placeholder:text-white/30 focus:outline-none focus:border-[#4ecdc4]/50 font-mono"
+            placeholder="Block #..."
+            className="retro-input flex-1 h-12 px-4 bg-white/5 border border-white/10 rounded-lg text-white text-base placeholder:text-white/20 font-[family-name:var(--font-avenue-mono)] transition-all"
             onKeyDown={(e) => e.key === "Enter" && handlePlay()}
           />
           <button
             onClick={handlePlay}
             disabled={!blockInput || loading}
-            className="h-12 px-5 rounded-lg bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity font-[family-name:var(--font-roobert)]"
+            className="neon-btn h-12 px-6 rounded-lg bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-[family-name:var(--font-roobert)]"
           >
             Play
           </button>
@@ -68,14 +68,14 @@ export function BlockPicker() {
           <button
             onClick={handlePlayLatest}
             disabled={loading}
-            className="flex-1 h-12 rounded-lg border border-white/10 text-white/80 text-sm hover:bg-white/5 active:bg-white/10 transition-colors disabled:opacity-50 font-[family-name:var(--font-roobert)]"
+            className="neon-btn flex-1 h-12 rounded-lg border border-[#4ecdc4]/20 text-[#4ecdc4]/70 text-sm hover:bg-[#4ecdc4]/5 hover:text-[#4ecdc4] hover:border-[#4ecdc4]/30 active:bg-[#4ecdc4]/10 transition-all disabled:opacity-50 font-[family-name:var(--font-roobert)]"
           >
-            {loading ? "Loading..." : "Play Latest"}
+            {loading ? "Loading..." : "Latest Block"}
           </button>
           <button
             onClick={handleRandomBlock}
             disabled={loading}
-            className="flex-1 h-12 rounded-lg border border-white/10 text-white/80 text-sm hover:bg-white/5 active:bg-white/10 transition-colors disabled:opacity-50 font-[family-name:var(--font-roobert)]"
+            className="neon-btn flex-1 h-12 rounded-lg border border-[#45b7d1]/20 text-[#45b7d1]/70 text-sm hover:bg-[#45b7d1]/5 hover:text-[#45b7d1] hover:border-[#45b7d1]/30 active:bg-[#45b7d1]/10 transition-all disabled:opacity-50 font-[family-name:var(--font-roobert)]"
           >
             {loading ? "Loading..." : "Random Block"}
           </button>

@@ -18,19 +18,19 @@ export default function Home() {
 
       <main className="relative z-10 flex flex-col items-center px-4 pt-16 pb-8 sm:py-20 text-white safe-all">
         {/* Logo / Branding */}
-        <div className="flex flex-col items-center gap-2 sm:gap-3 mb-6 sm:mb-10">
+        <div className="flex flex-col items-center gap-3 sm:gap-4 mb-8 sm:mb-12">
           <h1
-            className="text-5xl sm:text-7xl font-black tracking-tighter font-[family-name:var(--font-roobert)]"
+            className="text-6xl sm:text-8xl font-black tracking-tighter font-[family-name:var(--font-roobert)] neon-pulse"
             style={{
-              background: "linear-gradient(135deg, #4ecdc4, #45b7d1, #ffd700)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+              color: "#4ecdc4",
+              textShadow:
+                "0 0 7px #4ecdc4, 0 0 10px #4ecdc4, 0 0 21px #4ecdc4, 0 0 42px rgba(78,205,196,0.3), 0 0 82px rgba(78,205,196,0.1)",
             }}
           >
             TEMPO
           </h1>
-          <p className="text-sm sm:text-base text-white/50 font-[family-name:var(--font-roobert)] text-center max-w-sm">
-            A rhythm game powered by blockchain blocks. Every block is a unique beat.
+          <p className="text-xs sm:text-sm text-white/40 font-[family-name:var(--font-avenue-mono)] text-center max-w-sm tracking-wider uppercase">
+            Blockchain rhythm &middot; Every block is a unique beat
           </p>
         </div>
 
@@ -50,8 +50,8 @@ export default function Home() {
         ) : (
           <div className="flex flex-col items-center gap-6 mt-4">
             <SignInButton />
-            <p className="text-xs text-white/30 max-w-xs text-center">
-              Connect your Abstract Global Wallet to play and submit scores on-chain.
+            <p className="text-xs text-white/30 max-w-xs text-center font-[family-name:var(--font-avenue-mono)] tracking-wide">
+              Connect your Abstract wallet to play and compete on-chain
             </p>
 
             {/* Show leaderboard even when disconnected */}

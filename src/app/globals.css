@@ -245,3 +245,136 @@ input[type="range"]::-moz-range-thumb {
 .wallet-dropdown-enter {
   animation: wallet-dropdown-enter 0.15s ease-out forwards;
 }
+
+/* ================================================================
+   RETRO ARCADE / SYNTHWAVE DESIGN SYSTEM
+   ================================================================ */
+
+/* Neon text glow — pulsing animation */
+@keyframes neon-pulse {
+  0%, 100% {
+    text-shadow:
+      0 0 4px rgba(78, 205, 196, 0.6),
+      0 0 11px rgba(78, 205, 196, 0.4),
+      0 0 19px rgba(78, 205, 196, 0.2);
+  }
+  50% {
+    text-shadow:
+      0 0 7px rgba(78, 205, 196, 0.8),
+      0 0 21px rgba(78, 205, 196, 0.6),
+      0 0 42px rgba(78, 205, 196, 0.3),
+      0 0 82px rgba(78, 205, 196, 0.1);
+  }
+}
+
+.neon-pulse {
+  animation: neon-pulse 3s ease-in-out infinite;
+}
+
+/* Neon border glow — pulsing */
+@keyframes border-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 5px rgba(78, 205, 196, 0.1),
+      inset 0 0 5px rgba(78, 205, 196, 0.03);
+  }
+  50% {
+    box-shadow:
+      0 0 10px rgba(78, 205, 196, 0.15),
+      0 0 20px rgba(78, 205, 196, 0.05),
+      inset 0 0 10px rgba(78, 205, 196, 0.05);
+  }
+}
+
+/* Retro card — the standard card style throughout the app */
+.retro-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(78, 205, 196, 0.15);
+  border-radius: 12px;
+  box-shadow:
+    0 0 15px rgba(78, 205, 196, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  animation: border-glow 4s ease-in-out infinite;
+}
+
+/* Retro section header — with underline glow */
+.retro-header::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 1px;
+  margin-top: 8px;
+  background: linear-gradient(90deg, transparent, rgba(78, 205, 196, 0.4), transparent);
+}
+
+/* Synthwave perspective grid scroll */
+@keyframes grid-flow {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 60px; }
+}
+
+/* Horizon glow pulse */
+@keyframes horizon-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+/* CRT scanline overlay — very subtle */
+.crt-scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.03) 0px,
+    rgba(0, 0, 0, 0.03) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none;
+}
+
+/* Neon button glow on hover */
+.neon-btn {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.neon-btn::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: linear-gradient(135deg, rgba(78, 205, 196, 0.2), rgba(69, 183, 209, 0.2));
+  filter: blur(8px);
+  z-index: -1;
+}
+
+.neon-btn:hover::after {
+  opacity: 1;
+}
+
+/* Star twinkle for background particles */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.5); }
+}
+
+/* Score counter glow */
+@keyframes score-glow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(78, 205, 196, 0.5), 0 0 40px rgba(78, 205, 196, 0.2);
+  }
+}
+
+/* Retro input focus glow */
+.retro-input:focus {
+  border-color: rgba(78, 205, 196, 0.5);
+  box-shadow:
+    0 0 8px rgba(78, 205, 196, 0.15),
+    inset 0 0 4px rgba(78, 205, 196, 0.05);
+  outline: none;
+}
