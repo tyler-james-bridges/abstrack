@@ -21,21 +21,17 @@ export function PlayerBestScores() {
   const { address } = useAccount();
   const [scores, setScores] = useState<ScoreEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    if (!address) {
-      setScores([]);
-      setLoading(false);
-      return;
-    }
-
+  const fetchScores = (playerAddress: Address) => {
     setLoading(true);
+    setError(false);
     publicClient
       .readContract({
         address: TEMPO_SCORE_REGISTRY_ADDRESS,
         abi: TEMPO_SCORE_REGISTRY_ABI,
         functionName: "getPlayerScores",
-        args: [address as Address],
+        args: [playerAddress],
       })
       .then((result) => {
         const entries = result as unknown as ScoreEntry[];
@@ -46,8 +42,19 @@ export function PlayerBestScores() {
       })
       .catch(() => {
         setScores([]);
+        setError(true);
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (!address) {
+      setScores([]);
+      setLoading(false);
+      return;
+    }
+
+    fetchScores(address as Address);
   }, [address]);
 
   if (!address) return null;
@@ -61,6 +68,29 @@ export function PlayerBestScores() {
           </h2>
           <div className="flex items-center justify-center py-6">
             <div className="w-5 h-5 border-2 border-[#45b7d1]/20 border-t-[#45b7d1]/60 rounded-full animate-spin" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && address) {
+    return (
+      <div className="w-full max-w-md mx-auto mt-6">
+        <div className="retro-card p-6">
+          <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#4ecdc4]/70 retro-header">
+            Your Scores
+          </h2>
+          <div className="text-center py-4">
+            <p className="text-sm text-white/30 font-[family-name:var(--font-avenue-mono)] mb-3">
+              Failed to load your scores
+            </p>
+            <button
+              onClick={() => fetchScores(address as Address)}
+              className="text-xs text-[#4ecdc4]/70 hover:text-[#4ecdc4] border border-[#4ecdc4]/20 hover:border-[#4ecdc4]/40 px-4 py-2 rounded-lg transition-colors font-[family-name:var(--font-roobert)]"
+            >
+              Retry
+            </button>
           </div>
         </div>
       </div>
