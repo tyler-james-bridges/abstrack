@@ -7,11 +7,10 @@ import {
   useCreateSession,
 } from "@abstract-foundation/agw-react";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { getGeneralPaymasterInput } from "viem/zksync";
 import { abstract } from "viem/chains";
 import type { SessionConfig } from "@abstract-foundation/agw-client/sessions";
 import type { SessionClient } from "@abstract-foundation/agw-client/sessions";
-import { buildAbstrackSessionConfig, SESSION_PAYMASTER } from "@/lib/chain/sessionSetup";
+import { buildAbstrackSessionConfig } from "@/lib/chain/sessionSetup";
 import {
   ABSTRACK_ABI,
   ABSTRACK_ADDRESS,
@@ -145,8 +144,6 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
       setStatus("creating_session");
       await createSessionAsync({
         session: sessionConfig,
-        paymaster: SESSION_PAYMASTER,
-        paymasterInput: getGeneralPaymasterInput({ innerInput: "0x" }),
       });
 
       // Persist the private key for reuse
