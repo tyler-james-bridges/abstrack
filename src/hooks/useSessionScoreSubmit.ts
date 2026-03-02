@@ -1,70 +1,14 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { useAccount } from "wagmi";
-import {
-  useAbstractClient,
-  useCreateSession,
-} from "@abstract-foundation/agw-react";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { abstract } from "viem/chains";
-import type { SessionConfig } from "@abstract-foundation/agw-client/sessions";
-import type { SessionClient } from "@abstract-foundation/agw-client/sessions";
-import { buildAbstrackSessionConfig } from "@/lib/chain/sessionSetup";
+import { useWriteContractSponsored } from "@abstract-foundation/agw-react";
+import { getGeneralPaymasterInput } from "viem/zksync";
 import {
   ABSTRACK_ABI,
   ABSTRACK_ADDRESS,
+  PAYMASTER_ADDRESS,
 } from "@/lib/chain/scoreContract";
-
-const SESSION_STORAGE_KEY = "abstrack_session_key_v2";
-const LEGACY_SESSION_STORAGE_KEYS = ["abstrack_session_key"];
-
-interface StoredSession {
-  privateKey: `0x${string}`;
-  expiresAt: number; // unix seconds
-}
-
-/**
- * Persist the session private key in sessionStorage so it survives soft navigations
- * but not browser restarts (security trade-off: short-lived key, scoped permissions).
- */
-function loadStoredSession(): StoredSession | null {
-  if (typeof window === "undefined") return null;
-  try {
-    // One-time cleanup of legacy keys so we don't reuse stale paymaster-bound sessions.
-    for (const key of LEGACY_SESSION_STORAGE_KEYS) {
-      sessionStorage.removeItem(key);
-    }
-
-    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as StoredSession;
-    // Check expiry with a 60-second buffer
-    if (parsed.expiresAt < Math.floor(Date.now() / 1000) + 60) {
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
-      return null;
-    }
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function saveSession(privateKey: `0x${string}`, expiresAt: number): void {
-  if (typeof window === "undefined") return;
-  sessionStorage.setItem(
-    SESSION_STORAGE_KEY,
-    JSON.stringify({ privateKey, expiresAt })
-  );
-}
-
-function clearStoredSession(): void {
-  if (typeof window === "undefined") return;
-  sessionStorage.removeItem(SESSION_STORAGE_KEY);
-  for (const key of LEGACY_SESSION_STORAGE_KEYS) {
-    sessionStorage.removeItem(key);
-  }
-}
 
 export type SessionSubmitStatus =
   | "idle"
@@ -75,122 +19,43 @@ export type SessionSubmitStatus =
   | "error";
 
 interface UseSessionScoreSubmitReturn {
-  /** Whether a session is already active (no popup needed). */
   hasSession: boolean;
-  /** Submit a score -- creates a session on first call if needed. */
   submitScore: (blockNumber: bigint, score: bigint) => Promise<`0x${string}`>;
-  /** Current status for UI display. */
   status: SessionSubmitStatus;
-  /** Error message if status is "error". */
   error: string | null;
-  /** Transaction hash after successful submission. */
   txHash: `0x${string}` | null;
-  /** Reset state for another submission. */
   reset: () => void;
 }
 
 /**
- * Hook that manages AGW session keys for popup-free score submission.
- *
- * Flow:
- * 1. First submission: creates a session key (one wallet popup for approval).
- * 2. Subsequent submissions: uses the session client directly (no popup).
- * 3. Session auto-expires after 1 hour; a new one is created as needed.
+ * Hook for gas-sponsored score submission via the AGW paymaster.
+ * Each submission goes through the Privy approval popup.
  */
 export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
   const { address } = useAccount();
-  const { data: agwClient } = useAbstractClient();
-  const { createSessionAsync } = useCreateSession();
+  const { writeContractSponsoredAsync } = useWriteContractSponsored();
 
   const [status, setStatus] = useState<SessionSubmitStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
-
-  // Refs to hold the session client and config across renders without causing re-renders
-  const sessionClientRef = useRef<SessionClient | null>(null);
-  const sessionConfigRef = useRef<SessionConfig | null>(null);
-  const signerRef = useRef<ReturnType<typeof privateKeyToAccount> | null>(null);
-
-  const hasSession = sessionClientRef.current !== null;
-
-  /**
-   * Ensure we have a valid session client, creating one if necessary.
-   * Returns the session client or throws on failure.
-   */
-  const ensureSession = useCallback(async (): Promise<SessionClient> => {
-    // If we already have a client, check if it's still valid
-    if (sessionClientRef.current && sessionConfigRef.current) {
-      const now = BigInt(Math.floor(Date.now() / 1000));
-      if (sessionConfigRef.current.expiresAt > now + 60n) {
-        return sessionClientRef.current;
-      }
-      // Session expired or about to expire -- create a new one
-      sessionClientRef.current = null;
-      sessionConfigRef.current = null;
-      signerRef.current = null;
-      clearStoredSession();
-    }
-
-    if (!agwClient || !address) {
-      throw new Error("Wallet not connected");
-    }
-
-    // Try to restore a persisted session
-    const stored = loadStoredSession();
-    let privateKey: `0x${string}`;
-
-    if (stored) {
-      privateKey = stored.privateKey;
-    } else {
-      privateKey = generatePrivateKey();
-    }
-
-    const signer = privateKeyToAccount(privateKey);
-    // When restoring, pass the original expiresAt so the config hash matches on-chain
-    const sessionConfig = buildAbstrackSessionConfig(
-      signer.address,
-      stored ? BigInt(stored.expiresAt) : undefined
-    );
-
-    // If we don't have a stored session, we need to create one on-chain (this shows a popup)
-    if (!stored) {
-      setStatus("creating_session");
-      await createSessionAsync({
-        session: sessionConfig,
-      });
-
-      // Persist the private key for reuse
-      saveSession(privateKey, Number(sessionConfig.expiresAt));
-    }
-
-    // Build the session client from the AGW client
-    const sessionClient = agwClient.toSessionClient(signer, sessionConfig);
-
-    sessionClientRef.current = sessionClient;
-    sessionConfigRef.current = sessionConfig;
-    signerRef.current = signer;
-
-    return sessionClient;
-  }, [agwClient, address, createSessionAsync]);
 
   const submitScore = useCallback(
     async (blockNumber: bigint, score: bigint): Promise<`0x${string}`> => {
       setError(null);
       setTxHash(null);
 
-      try {
-        const client = await ensureSession();
+      if (!address) throw new Error("Wallet not connected");
 
+      try {
         setStatus("submitting");
 
-        const hash = await client.writeContract({
+        const hash = await writeContractSponsoredAsync({
           abi: ABSTRACK_ABI,
           address: ABSTRACK_ADDRESS,
           functionName: "submitScore",
           args: [blockNumber, score],
-          // Session client handles the account internally
-          account: client.account,
-          chain: abstract,
+          paymaster: PAYMASTER_ADDRESS,
+          paymasterInput: getGeneralPaymasterInput({ innerInput: "0x" }),
         });
 
         setTxHash(hash);
@@ -200,43 +65,6 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
         const message =
           err instanceof Error ? err.message : "Unknown error submitting score";
 
-        const isSessionPolicyViolation =
-          message.includes("Session key policy violation") ||
-          message.includes("policy violation") ||
-          message.includes("Status: Unset");
-
-        // Fallback path: if session policy fails, submit directly with AGW client.
-        if (isSessionPolicyViolation && agwClient) {
-          try {
-            clearStoredSession();
-            sessionClientRef.current = null;
-            sessionConfigRef.current = null;
-            signerRef.current = null;
-
-            setStatus("submitting");
-            const directHash = await agwClient.writeContract({
-              abi: ABSTRACK_ABI,
-              address: ABSTRACK_ADDRESS,
-              functionName: "submitScore",
-              args: [blockNumber, score],
-              chain: abstract,
-            });
-
-            setTxHash(directHash);
-            setStatus("success");
-            return directHash;
-          } catch (fallbackErr) {
-            const fallbackMessage =
-              fallbackErr instanceof Error
-                ? fallbackErr.message
-                : "Direct submit fallback failed";
-            setError(fallbackMessage);
-            setStatus("error");
-            throw fallbackErr;
-          }
-        }
-
-        // Handle "score must be higher" revert
         if (message.includes("New score must be higher")) {
           setError(
             "You already have a higher score for this block. Only improvements are recorded on-chain."
@@ -244,23 +72,23 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
         } else if (message.includes("Score exceeds maximum")) {
           setError("Score exceeds the maximum allowed value (1,000,000).");
         } else if (
-          message.includes("policy violation") ||
-          message.includes("Status: Unset")
-        ) {
-          setError("Session expired. Please try again to create a new session.");
-          clearStoredSession();
-          sessionClientRef.current = null;
-          sessionConfigRef.current = null;
-          signerRef.current = null;
-        } else if (
           message.includes("rejected") ||
-          message.includes("denied")
+          message.includes("denied") ||
+          message.includes("User rejected")
         ) {
           setError("Transaction was rejected. Please try again.");
-          clearStoredSession();
-          sessionClientRef.current = null;
-          sessionConfigRef.current = null;
-          signerRef.current = null;
+        } else if (message.includes("insufficient funds")) {
+          setError(
+            "Insufficient funds for gas. The paymaster may be out of funds."
+          );
+        } else if (
+          message.includes("Failed to initialize request") ||
+          message.includes("UserOperationExecutionError") ||
+          /0x[a-fA-F0-9]{8,}/.test(message)
+        ) {
+          setError("Transaction failed. Please try again.");
+        } else if (message.length > 150) {
+          setError(message.slice(0, 147) + "...");
         } else {
           setError(message);
         }
@@ -269,7 +97,7 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
         throw err;
       }
     },
-    [ensureSession, agwClient]
+    [address, writeContractSponsoredAsync]
   );
 
   const reset = useCallback(() => {
@@ -279,7 +107,7 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
   }, []);
 
   return {
-    hasSession,
+    hasSession: false,
     submitScore,
     status,
     error,
