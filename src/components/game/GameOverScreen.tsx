@@ -3,16 +3,10 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
-import { useWriteContractSponsored } from "@abstract-foundation/agw-react";
 import { useWaitForTransactionReceipt } from "wagmi";
-import { getGeneralPaymasterInput } from "viem/zksync";
 import type { FinalScore } from "@/lib/game/types";
 import { GRADE_COLORS, MAX_SCORE } from "@/lib/game/constants";
-import {
-  ABSTRACK_ABI,
-  ABSTRACK_ADDRESS,
-  PAYMASTER_ADDRESS,
-} from "@/lib/chain/scoreContract";
+import { useSessionScoreSubmit } from "@/hooks/useSessionScoreSubmit";
 import { abscanTxUrl } from "@/lib/format";
 
 interface GameOverScreenProps {
@@ -96,6 +90,16 @@ function parseSubmissionError(err: unknown): string {
   ) {
     return "Network error. Please check your connection and try again.";
   }
+  if (
+    message.includes("Failed to initialize request") ||
+    message.includes("Request Arguments") ||
+    message.includes("UserOperationExecutionError")
+  ) {
+    return "Transaction failed. Please try again.";
+  }
+  if (/0x[a-fA-F0-9]{8,}/.test(message)) {
+    return "Transaction failed. Please try again.";
+  }
   if (message.length > 150) {
     return message.slice(0, 147) + "...";
   }
@@ -112,17 +116,23 @@ export function GameOverScreen({
 }: GameOverScreenProps) {
   const router = useRouter();
   const { address } = useAccount();
-  const [submitted, setSubmitted] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   const {
-    writeContractSponsored,
-    data: txHash,
-    isPending: isSubmitting,
-    error: writeError,
-  } = useWriteContractSponsored();
+    submitScore,
+    status: sessionStatus,
+    txHash,
+    reset: resetSession,
+  } = useSessionScoreSubmit();
 
-  const { data: receipt } = useWaitForTransactionReceipt({ hash: txHash });
+  const { data: receipt } = useWaitForTransactionReceipt({
+    hash: txHash ?? undefined,
+  });
+
+  const isBusy =
+    sessionStatus === "creating_session" ||
+    sessionStatus === "submitting" ||
+    (txHash != null && !receipt);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -151,38 +161,20 @@ export function GameOverScreen({
   const displayError = useMemo(() => {
     if (!validation.valid) return validation.error;
     if (submissionError) return submissionError;
-    if (writeError) return parseSubmissionError(writeError);
     return null;
-  }, [validation, submissionError, writeError]);
+  }, [validation, submissionError]);
 
-  const handleSubmitScore = () => {
-    if (!address || submitted) return;
+  const handleSubmitScore = async () => {
+    if (!address) return;
     if (!validation.valid) return;
 
     setSubmissionError(null);
 
     try {
-      writeContractSponsored(
-        {
-          abi: ABSTRACK_ABI,
-          address: ABSTRACK_ADDRESS,
-          functionName: "submitScore",
-          args: [
-            BigInt(finalScore.blockNumber),
-            BigInt(finalScore.totalScore),
-          ],
-          paymaster: PAYMASTER_ADDRESS,
-          paymasterInput: getGeneralPaymasterInput({ innerInput: "0x" }),
-        },
-        {
-          onError: (error) => {
-            setSubmissionError(parseSubmissionError(error));
-            setSubmitted(false);
-          },
-        }
+      await submitScore(
+        BigInt(finalScore.blockNumber),
+        BigInt(finalScore.totalScore),
       );
-
-      setSubmitted(true);
     } catch (err) {
       setSubmissionError(parseSubmissionError(err));
     }
@@ -298,26 +290,28 @@ export function GameOverScreen({
           {address && !receipt && (
             <button
               onClick={handleSubmitScore}
-              disabled={isSubmitting || submitted || !validation.valid}
+              disabled={isBusy || !validation.valid}
               className="neon-btn w-full h-12 sm:h-14 rounded-full bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-roobert)]"
               style={{
                 boxShadow: "0 0 20px rgba(78,205,196,0.2)",
               }}
             >
-              {isSubmitting
-                ? "Submitting..."
-                : submitted && !submissionError
-                  ? "Confirming..."
-                  : !validation.valid
-                    ? "Score Invalid"
-                    : "Submit Score (Gas-Free)"}
+              {sessionStatus === "creating_session"
+                ? "Approving Session..."
+                : sessionStatus === "submitting"
+                  ? "Submitting..."
+                  : txHash && !receipt
+                    ? "Confirming..."
+                    : !validation.valid
+                      ? "Score Invalid"
+                      : "Submit Score (Gas-Free)"}
             </button>
           )}
 
-          {submissionError && !isSubmitting && (
+          {submissionError && !isBusy && (
             <button
               onClick={() => {
-                setSubmitted(false);
+                resetSession();
                 setSubmissionError(null);
               }}
               className="w-full h-12 rounded-full border border-red-500/30 text-red-400 text-sm hover:bg-red-500/10 active:bg-red-500/20 transition-colors font-[family-name:var(--font-roobert)]"
