@@ -16,7 +16,8 @@ import {
   ABSTRACK_ADDRESS,
 } from "@/lib/chain/scoreContract";
 
-const SESSION_STORAGE_KEY = "abstrack_session_key";
+const SESSION_STORAGE_KEY = "abstrack_session_key_v2";
+const LEGACY_SESSION_STORAGE_KEYS = ["abstrack_session_key"];
 
 interface StoredSession {
   privateKey: `0x${string}`;
@@ -30,6 +31,11 @@ interface StoredSession {
 function loadStoredSession(): StoredSession | null {
   if (typeof window === "undefined") return null;
   try {
+    // One-time cleanup of legacy keys so we don't reuse stale paymaster-bound sessions.
+    for (const key of LEGACY_SESSION_STORAGE_KEYS) {
+      sessionStorage.removeItem(key);
+    }
+
     const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredSession;
@@ -55,6 +61,9 @@ function saveSession(privateKey: `0x${string}`, expiresAt: number): void {
 function clearStoredSession(): void {
   if (typeof window === "undefined") return;
   sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  for (const key of LEGACY_SESSION_STORAGE_KEYS) {
+    sessionStorage.removeItem(key);
+  }
 }
 
 export type SessionSubmitStatus =
