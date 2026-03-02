@@ -16,7 +16,7 @@ export default function Home() {
     <div className="relative min-h-screen bg-black overflow-hidden">
       <BackgroundEffects />
 
-      <main className="relative z-10 flex flex-col items-center px-4 pt-16 pb-8 sm:py-20 text-white safe-all">
+      <main className="relative z-10 flex flex-col items-center px-4 pt-20 pb-8 sm:py-20 text-white safe-x safe-bottom">
         {/* Logo / Branding */}
         <div className="flex flex-col items-center gap-3 sm:gap-4 mb-8 sm:mb-12">
           <h1
