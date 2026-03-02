@@ -1,25 +1,19 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useAccount } from "wagmi";
-import { useWriteContractSponsored } from "@abstract-foundation/agw-react";
-import { getGeneralPaymasterInput } from "viem/zksync";
+import { useAbstractClient } from "@abstract-foundation/agw-react";
 import {
   ABSTRACK_ABI,
   ABSTRACK_ADDRESS,
-  PAYMASTER_ADDRESS,
 } from "@/lib/chain/scoreContract";
 
 export type SessionSubmitStatus =
   | "idle"
-  | "creating_session"
   | "submitting"
-  | "confirming"
   | "success"
   | "error";
 
 interface UseSessionScoreSubmitReturn {
-  hasSession: boolean;
   submitScore: (blockNumber: bigint, score: bigint) => Promise<`0x${string}`>;
   status: SessionSubmitStatus;
   error: string | null;
@@ -28,12 +22,12 @@ interface UseSessionScoreSubmitReturn {
 }
 
 /**
- * Hook for gas-sponsored score submission via the AGW paymaster.
- * Each submission goes through the Privy approval popup.
+ * Hook for gas-sponsored score submission via the AGW client.
+ * The Abstract Global Wallet handles gas sponsorship automatically
+ * through the Privy cross-app wallet infrastructure.
  */
 export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
-  const { address } = useAccount();
-  const { writeContractSponsoredAsync } = useWriteContractSponsored();
+  const { data: abstractClient } = useAbstractClient();
 
   const [status, setStatus] = useState<SessionSubmitStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -44,18 +38,16 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
       setError(null);
       setTxHash(null);
 
-      if (!address) throw new Error("Wallet not connected");
+      if (!abstractClient) throw new Error("Wallet not connected");
 
       try {
         setStatus("submitting");
 
-        const hash = await writeContractSponsoredAsync({
+        const hash = await abstractClient.writeContract({
           abi: ABSTRACK_ABI,
           address: ABSTRACK_ADDRESS,
           functionName: "submitScore",
           args: [blockNumber, score],
-          paymaster: PAYMASTER_ADDRESS,
-          paymasterInput: getGeneralPaymasterInput({ innerInput: "0x" }),
         });
 
         setTxHash(hash);
@@ -97,7 +89,7 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
         throw err;
       }
     },
-    [address, writeContractSponsoredAsync]
+    [abstractClient]
   );
 
   const reset = useCallback(() => {
@@ -107,7 +99,6 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
   }, []);
 
   return {
-    hasSession: false,
     submitScore,
     status,
     error,

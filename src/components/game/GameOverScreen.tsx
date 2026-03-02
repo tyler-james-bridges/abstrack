@@ -136,7 +136,6 @@ export function GameOverScreen({
   });
 
   const isBusy =
-    sessionStatus === "creating_session" ||
     sessionStatus === "submitting" ||
     (txHash != null && !receipt);
 
