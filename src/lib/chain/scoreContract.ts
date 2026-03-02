@@ -1,9 +1,6 @@
 export const ABSTRACK_ADDRESS =
   "0xb42244ed94500318e8cE25b0434fA8973334FC0b" as const;
 
-export const PAYMASTER_ADDRESS =
-  "0x5407B5040dec3D339A9247f3654E59EEccbb6391" as const;
-
 export const ABSTRACK_ABI = [
   {
     type: "function",
