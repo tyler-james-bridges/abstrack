@@ -75,7 +75,7 @@ export function WalletHeader() {
   // Loading / reconnecting state
   if (status === "connecting" || status === "reconnecting") {
     return (
-      <div className="fixed top-0 right-0 z-50 p-4 sm:p-5 safe-top safe-right">
+      <div className="fixed top-0 right-0 z-50 p-4 sm:p-6 safe-top safe-right">
         <div className="flex items-center justify-center h-11 w-11 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
           <div className="animate-spin">
             <Image src="/abs.svg" alt="Loading" width={18} height={18} />
@@ -88,7 +88,7 @@ export function WalletHeader() {
   // Disconnected state: compact connect button
   if (!address) {
     return (
-      <div className="fixed top-0 right-0 z-50 p-4 sm:p-5 safe-top safe-right">
+      <div className="fixed top-0 right-0 z-50 p-4 sm:p-6 safe-top safe-right">
         <button
           onClick={login}
           className="flex items-center gap-2 h-11 px-4 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-white/80 hover:bg-white/10 hover:text-white hover:border-white/20 active:scale-95 transition-all font-[family-name:var(--font-roobert)] text-sm cursor-pointer"
@@ -110,7 +110,7 @@ export function WalletHeader() {
   return (
     <div
       ref={dropdownRef}
-      className="fixed top-0 right-0 z-50 p-4 sm:p-5 safe-top safe-right"
+      className="fixed top-0 right-0 z-50 p-4 sm:p-6 safe-top safe-right"
     >
       {/* Address pill button */}
       <button
@@ -153,7 +153,7 @@ export function WalletHeader() {
 
       {/* Dropdown menu */}
       {dropdownOpen && (
-        <div className="absolute right-4 sm:right-5 top-full mt-1 w-64 rounded-xl bg-[#0a0a12]/95 border border-[#4ecdc4]/15 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden wallet-dropdown-enter">
+        <div className="absolute right-4 sm:right-6 top-full mt-1 w-64 rounded-xl bg-[#0a0a12]/95 border border-[#4ecdc4]/15 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden wallet-dropdown-enter">
           {/* Address section */}
           <div className="px-4 pt-4 pb-3 border-b border-white/5">
             <p className="text-[10px] uppercase tracking-wider text-white/30 font-[family-name:var(--font-roobert)] mb-2">
