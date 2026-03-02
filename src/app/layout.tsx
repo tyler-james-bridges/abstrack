@@ -1,19 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { Geist, Geist_Mono } from "next/font/google";
 import NextAbstractWalletProvider from "@/components/NextAbstractWalletProvider";
 import { WalletHeader } from "@/components/wallet/WalletHeader";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "ABSTRACK | Blockchain Rhythm Game",
@@ -56,7 +46,7 @@ export default function RootLayout({
     <html lang="en">
       <NextAbstractWalletProvider>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} ${avenueMono.variable} ${roobert.variable} antialiased`}
+          className={`${avenueMono.variable} ${roobert.variable} antialiased`}
         >
           <WalletHeader />
           {children}

@@ -22,11 +22,10 @@ export default function Home() {
         {/* Logo / Branding */}
         <div className="flex flex-col items-center gap-3 sm:gap-4 mb-8 sm:mb-12">
           <h1
-            className="text-6xl sm:text-8xl font-black tracking-tighter font-[family-name:var(--font-roobert)] neon-pulse"
+            className="text-6xl sm:text-8xl font-black tracking-tighter font-[family-name:var(--font-roobert)]"
             style={{
-              color: "#4ecdc4",
-              textShadow:
-                "0 0 7px #4ecdc4, 0 0 10px #4ecdc4, 0 0 21px #4ecdc4, 0 0 42px rgba(78,205,196,0.3), 0 0 82px rgba(78,205,196,0.1)",
+              color: "#73C98C",
+              textShadow: "0 0 14px rgba(62,185,95,0.32), 0 0 28px rgba(62,185,95,0.16)",
             }}
           >
             ABSTRACK

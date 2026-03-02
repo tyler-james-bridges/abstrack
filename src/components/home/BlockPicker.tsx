@@ -81,7 +81,7 @@ export function BlockPicker() {
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="retro-card p-6">
-        <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#4ecdc4]/70 retro-header">
+        <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#3EB95F]/70 retro-header">
           Play a Block
         </h2>
 
@@ -100,7 +100,7 @@ export function BlockPicker() {
           <button
             onClick={handlePlay}
             disabled={!blockInput || loading}
-            className="neon-btn h-12 px-6 rounded-lg bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-[family-name:var(--font-roobert)]"
+            className="neon-btn h-12 px-6 rounded-lg bg-gradient-to-r from-[#3EB95F] to-[#73C98C] text-black font-bold text-sm hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-all font-[family-name:var(--font-roobert)]"
           >
             Play
           </button>
@@ -117,14 +117,14 @@ export function BlockPicker() {
           <button
             onClick={handlePlayLatest}
             disabled={loading}
-            className="neon-btn flex-1 h-12 rounded-lg border border-[#4ecdc4]/20 text-[#4ecdc4]/70 text-sm hover:bg-[#4ecdc4]/5 hover:text-[#4ecdc4] hover:border-[#4ecdc4]/30 active:bg-[#4ecdc4]/10 transition-all disabled:opacity-50 font-[family-name:var(--font-roobert)]"
+            className="neon-btn flex-1 h-12 rounded-lg border border-[#3EB95F]/20 text-[#3EB95F]/70 text-sm hover:bg-[#3EB95F]/5 hover:text-[#3EB95F] hover:border-[#3EB95F]/30 active:bg-[#3EB95F]/10 transition-all disabled:opacity-50 font-[family-name:var(--font-roobert)]"
           >
             {loading ? "Loading..." : "Latest Block"}
           </button>
           <button
             onClick={handleRandomBlock}
             disabled={loading}
-            className="neon-btn flex-1 h-12 rounded-lg border border-[#45b7d1]/20 text-[#45b7d1]/70 text-sm hover:bg-[#45b7d1]/5 hover:text-[#45b7d1] hover:border-[#45b7d1]/30 active:bg-[#45b7d1]/10 transition-all disabled:opacity-50 font-[family-name:var(--font-roobert)]"
+            className="neon-btn flex-1 h-12 rounded-lg border border-[#73C98C]/20 text-[#73C98C]/70 text-sm hover:bg-[#73C98C]/5 hover:text-[#73C98C] hover:border-[#73C98C]/30 active:bg-[#73C98C]/10 transition-all disabled:opacity-50 font-[family-name:var(--font-roobert)]"
           >
             {loading ? "Loading..." : "Random Block"}
           </button>
@@ -133,9 +133,9 @@ export function BlockPicker() {
         <button
           onClick={handleAgentMode}
           disabled={loading}
-          className="mt-2 neon-btn w-full h-11 rounded-lg border border-fuchsia-400/30 text-fuchsia-300/80 text-xs hover:bg-fuchsia-400/5 hover:text-fuchsia-200 hover:border-fuchsia-300/40 active:bg-fuchsia-400/10 transition-all disabled:opacity-50 font-[family-name:var(--font-avenue-mono)] tracking-wider uppercase"
+          className="mt-2 neon-btn w-full h-11 rounded-lg border border-[#3EB95F]/30 text-[#3EB95F]/80 text-xs hover:bg-[#3EB95F]/5 hover:text-[#3EB95F] hover:border-[#3EB95F]/40 active:bg-[#3EB95F]/10 transition-all disabled:opacity-50 font-[family-name:var(--font-avenue-mono)] tracking-wider uppercase"
         >
-          {loading ? "Loading..." : "Agent Autoplay (ACK-ready)"}
+          {loading ? "Loading..." : "Agent Autoplay"}
         </button>
       </div>
     </div>

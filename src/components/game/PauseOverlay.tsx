@@ -46,15 +46,15 @@ export function PauseOverlay({ onResume, onQuit }: PauseOverlayProps) {
           <div
             className="w-3.5 sm:w-4 h-12 sm:h-14 rounded-sm"
             style={{
-              background: "#4ecdc4",
-              boxShadow: "0 0 10px rgba(78,205,196,0.5), 0 0 20px rgba(78,205,196,0.2)",
+              background: "#3EB95F",
+              boxShadow: "0 0 10px rgba(182,255,0,0.5), 0 0 20px rgba(182,255,0,0.2)",
             }}
           />
           <div
             className="w-3.5 sm:w-4 h-12 sm:h-14 rounded-sm"
             style={{
-              background: "#4ecdc4",
-              boxShadow: "0 0 10px rgba(78,205,196,0.5), 0 0 20px rgba(78,205,196,0.2)",
+              background: "#3EB95F",
+              boxShadow: "0 0 10px rgba(182,255,0,0.5), 0 0 20px rgba(182,255,0,0.2)",
             }}
           />
         </div>
@@ -62,7 +62,7 @@ export function PauseOverlay({ onResume, onQuit }: PauseOverlayProps) {
         <h2
           className="text-2xl sm:text-3xl font-bold text-white font-[family-name:var(--font-roobert)]"
           style={{
-            textShadow: "0 0 15px rgba(78,205,196,0.4)",
+            textShadow: "0 0 15px rgba(182,255,0,0.4)",
           }}
         >
           Paused
@@ -71,9 +71,9 @@ export function PauseOverlay({ onResume, onQuit }: PauseOverlayProps) {
         <div className="flex flex-col gap-3 w-full">
           <button
             onClick={onResume}
-            className="neon-btn w-full h-12 sm:h-14 rounded-full bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)]"
+            className="neon-btn w-full h-12 sm:h-14 rounded-full bg-gradient-to-r from-[#3EB95F] to-[#73C98C] text-black font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)]"
             style={{
-              boxShadow: "0 0 20px rgba(78,205,196,0.2)",
+              boxShadow: "0 0 20px rgba(182,255,0,0.2)",
             }}
           >
             Resume

@@ -21,11 +21,11 @@ export function RecentBlocks() {
     return (
       <div className="w-full max-w-md mx-auto mt-6">
         <div className="retro-card p-6">
-          <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#45b7d1]/70 retro-header">
+          <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#73C98C]/70 retro-header">
             Recent Blocks
           </h2>
           <div className="flex items-center justify-center py-8">
-            <div className="w-5 h-5 border-2 border-[#4ecdc4]/20 border-t-[#4ecdc4]/60 rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-[#3EB95F]/20 border-t-[#3EB95F]/60 rounded-full animate-spin" />
           </div>
         </div>
       </div>
@@ -37,7 +37,7 @@ export function RecentBlocks() {
   return (
     <div className="w-full max-w-md mx-auto mt-6">
       <div className="retro-card p-6">
-        <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#45b7d1]/70 retro-header">
+        <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#73C98C]/70 retro-header">
           Recent Blocks
         </h2>
         <div className="space-y-1.5 max-h-80 overflow-y-auto">
@@ -51,11 +51,11 @@ export function RecentBlocks() {
               <button
                 key={block.number.toString()}
                 onClick={() => router.push(`/play/${block.number}`)}
-                className="w-full flex items-center justify-between p-3 min-h-[52px] hover:bg-[#4ecdc4]/5 active:bg-[#4ecdc4]/10 rounded-lg transition-all group border border-transparent hover:border-[#4ecdc4]/10"
+                className="w-full flex items-center justify-between p-3 min-h-[52px] hover:bg-[#3EB95F]/5 active:bg-[#3EB95F]/10 rounded-lg transition-all group border border-transparent hover:border-[#3EB95F]/10"
               >
                 <div className="text-left">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-[family-name:var(--font-avenue-mono)] text-white/70 group-hover:text-[#4ecdc4] transition-colors">
+                    <p className="text-sm font-[family-name:var(--font-avenue-mono)] text-white/70 group-hover:text-[#3EB95F] transition-colors">
                       #{block.number.toString()}
                     </p>
                     <span
@@ -75,7 +75,7 @@ export function RecentBlocks() {
                     </p>
                   </div>
                 </div>
-                <span className="text-xs text-[#4ecdc4] opacity-40 group-hover:opacity-100 transition-opacity font-[family-name:var(--font-avenue-mono)]">
+                <span className="text-xs text-[#3EB95F] opacity-40 group-hover:opacity-100 transition-opacity font-[family-name:var(--font-avenue-mono)]">
                   PLAY &rarr;
                 </span>
               </button>

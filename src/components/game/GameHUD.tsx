@@ -80,8 +80,8 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
           className="h-full transition-all duration-100"
           style={{
             width: `${progress * 100}%`,
-            background: "linear-gradient(90deg, #4ecdc4, #45b7d1)",
-            boxShadow: "0 0 8px rgba(78,205,196,0.4), 0 1px 4px rgba(78,205,196,0.2)",
+            background: "linear-gradient(90deg, #3EB95F, #73C98C)",
+            boxShadow: "0 0 8px rgba(182,255,0,0.4), 0 1px 4px rgba(182,255,0,0.2)",
           }}
         />
       </div>
@@ -96,7 +96,7 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
         <p
           className="text-lg sm:text-3xl font-bold text-white font-[family-name:var(--font-avenue-mono)] tabular-nums leading-tight"
           style={{
-            textShadow: "0 0 10px rgba(78,205,196,0.3)",
+            textShadow: "0 0 10px rgba(182,255,0,0.3)",
             animation: "score-glow 2s ease-in-out infinite",
           }}
         >
@@ -119,13 +119,13 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
                 combo >= 50
                   ? "0 0 20px #ffd700, 0 0 40px #ffd700, 0 0 80px rgba(255,215,0,0.3)"
                   : combo >= 25
-                    ? "0 0 15px #4ecdc4, 0 0 30px rgba(78,205,196,0.3)"
+                    ? "0 0 15px #3EB95F, 0 0 30px rgba(182,255,0,0.3)"
                     : "0 0 10px rgba(255,255,255,0.3)",
               color:
                 combo >= 50
                   ? "#ffd700"
                   : combo >= 25
-                    ? "#4ecdc4"
+                    ? "#3EB95F"
                     : undefined,
             }}
           >
@@ -138,7 +138,7 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
                 combo >= 50
                   ? "rgba(255,215,0,0.6)"
                   : combo >= 25
-                    ? "rgba(78,205,196,0.6)"
+                    ? "rgba(182,255,0,0.6)"
                     : "rgba(255,255,255,0.4)",
             }}
           >
@@ -158,7 +158,7 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setShowVolumeSlider((v) => !v)}
-            className="flex items-center justify-center w-11 h-11 text-white/40 hover:text-[#4ecdc4] active:text-[#4ecdc4] transition-colors rounded-lg"
+            className="flex items-center justify-center w-11 h-11 text-white/40 hover:text-[#3EB95F] active:text-[#3EB95F] transition-colors rounded-lg"
             aria-label="Toggle volume"
           >
             {volumeIcon}
@@ -168,7 +168,7 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
               className="flex items-center gap-2 rounded-full px-3 py-2"
               style={{
                 background: "rgba(0,0,0,0.8)",
-                border: "1px solid rgba(78,205,196,0.15)",
+                border: "1px solid rgba(182,255,0,0.15)",
                 backdropFilter: "blur(8px)",
               }}
             >
@@ -178,7 +178,7 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
                 max="100"
                 value={volume}
                 onChange={handleVolumeChange}
-                className="w-20 sm:w-24 h-2 accent-[#4ecdc4] cursor-pointer"
+                className="w-20 sm:w-24 h-2 accent-[#3EB95F] cursor-pointer"
                 aria-label="Volume"
               />
               <span className="text-[10px] text-white/40 font-[family-name:var(--font-avenue-mono)] w-6 text-right tabular-nums">

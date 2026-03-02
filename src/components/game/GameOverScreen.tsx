@@ -19,16 +19,16 @@ interface GameOverScreenProps {
 
 const GRADE_GLOW: Record<string, string> = {
   S: "0 0 20px #ffd700, 0 0 40px #ffd700, 0 0 80px rgba(255,215,0,0.4)",
-  A: "0 0 15px #4ecdc4, 0 0 30px rgba(78,205,196,0.3)",
-  B: "0 0 10px #45b7d1, 0 0 20px rgba(69,183,209,0.2)",
+  A: "0 0 15px #3EB95F, 0 0 30px rgba(182,255,0,0.3)",
+  B: "0 0 10px #73C98C, 0 0 20px rgba(148,216,45,0.2)",
   C: "0 0 10px rgba(168,130,255,0.4)",
   D: "0 0 10px rgba(255,107,107,0.3)",
 };
 
 const GRADE_COLORS_MAP: Record<string, string> = {
   S: "#ffd700",
-  A: "#4ecdc4",
-  B: "#45b7d1",
+  A: "#3EB95F",
+  B: "#73C98C",
   C: "#a882ff",
   D: "#ff6b6b",
 };
@@ -287,7 +287,7 @@ export function GameOverScreen({
           <p
             className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-avenue-mono)] tabular-nums"
             style={{
-              textShadow: "0 0 15px rgba(78,205,196,0.3)",
+              textShadow: "0 0 15px rgba(182,255,0,0.3)",
             }}
           >
             {finalScore.totalScore.toLocaleString()}
@@ -359,9 +359,9 @@ export function GameOverScreen({
             <button
               onClick={handleSubmitScore}
               disabled={isBusy || !validation.valid}
-              className="neon-btn w-full h-12 sm:h-14 rounded-full bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-roobert)]"
+              className="neon-btn w-full h-12 sm:h-14 rounded-full bg-gradient-to-r from-[#3EB95F] to-[#73C98C] text-black font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-roobert)]"
               style={{
-                boxShadow: "0 0 20px rgba(78,205,196,0.2)",
+                boxShadow: "0 0 20px rgba(182,255,0,0.2)",
               }}
             >
               {sessionStatus === "submitting"
@@ -390,25 +390,25 @@ export function GameOverScreen({
             <div
               className="text-center p-3 rounded-lg border"
               style={{
-                background: "rgba(78,205,196,0.05)",
-                borderColor: "rgba(78,205,196,0.2)",
+                background: "rgba(182,255,0,0.05)",
+                borderColor: "rgba(182,255,0,0.2)",
               }}
             >
-              <p className="text-sm text-[#4ecdc4] font-medium font-[family-name:var(--font-roobert)]">
+              <p className="text-sm text-[#3EB95F] font-medium font-[family-name:var(--font-roobert)]">
                 Score submitted on-chain!
               </p>
               <a
                 href={abscanTxUrl(receipt.transactionHash)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-[#45b7d1]/70 hover:text-[#45b7d1] underline font-[family-name:var(--font-avenue-mono)]"
+                className="text-xs text-[#73C98C]/70 hover:text-[#73C98C] underline font-[family-name:var(--font-avenue-mono)]"
               >
                 View on Abscan
               </a>
               {canShareDaily && (
                 <button
                   onClick={shareDailyLead}
-                  className="mt-3 w-full h-10 rounded-full border border-fuchsia-400/30 text-fuchsia-200 text-xs uppercase tracking-wider hover:bg-fuchsia-400/10"
+                  className="mt-3 w-full h-10 rounded-full border border-[#3EB95F]/30 text-[#3EB95F] text-xs uppercase tracking-wider hover:bg-[#3EB95F]/10"
                 >
                   Share #1 Daily Run
                 </button>
@@ -418,7 +418,7 @@ export function GameOverScreen({
 
           <button
             onClick={onPlayAgain}
-            className="neon-btn w-full h-12 rounded-full border border-[#4ecdc4]/20 text-[#4ecdc4]/80 font-bold text-sm hover:bg-[#4ecdc4]/5 hover:border-[#4ecdc4]/30 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)]"
+            className="neon-btn w-full h-12 rounded-full border border-[#3EB95F]/20 text-[#3EB95F]/80 font-bold text-sm hover:bg-[#3EB95F]/5 hover:border-[#3EB95F]/30 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)]"
           >
             Instant Rematch
           </button>

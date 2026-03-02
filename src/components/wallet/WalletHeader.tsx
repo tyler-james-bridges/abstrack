@@ -141,8 +141,8 @@ export function WalletHeader() {
       >
         {/* Green dot indicator */}
         <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4ecdc4] opacity-50" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4ecdc4]" />
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3EB95F] opacity-50" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-[#3EB95F]" />
         </span>
 
         <span className="font-mono text-xs sm:text-sm tracking-tight">
@@ -169,7 +169,7 @@ export function WalletHeader() {
 
       {/* Dropdown menu */}
       {dropdownOpen && (
-        <div className="absolute right-0 top-full mt-1 w-64 rounded-xl bg-[#0a0a12]/95 border border-[#4ecdc4]/15 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden wallet-dropdown-enter">
+        <div className="absolute right-0 top-full mt-1 w-64 rounded-xl bg-[#0a0a12]/95 border border-[#3EB95F]/15 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden wallet-dropdown-enter">
           {/* Address section */}
           <div className="px-4 pt-4 pb-3 border-b border-white/5">
             <p className="text-[10px] uppercase tracking-wider text-white/30 font-[family-name:var(--font-roobert)] mb-2">
@@ -189,7 +189,7 @@ export function WalletHeader() {
                   height="14"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#4ecdc4"
+                  stroke="#3EB95F"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"

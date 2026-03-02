@@ -20,7 +20,7 @@ export function GameLoadingScreen({ blockNumber, status }: GameLoadingScreenProp
           <div
             className="absolute inset-[-12px] rounded-full animate-ping"
             style={{
-              border: "1px solid rgba(78,205,196,0.2)",
+              border: "1px solid rgba(182,255,0,0.2)",
               animationDuration: "2s",
             }}
           />
@@ -28,21 +28,21 @@ export function GameLoadingScreen({ blockNumber, status }: GameLoadingScreenProp
           <div
             className="absolute inset-[-4px] rounded-full animate-pulse"
             style={{
-              border: "1px solid rgba(69,183,209,0.3)",
+              border: "1px solid rgba(148,216,45,0.3)",
             }}
           />
           <div
             className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center rounded-full"
             style={{
-              background: "radial-gradient(circle, rgba(78,205,196,0.1) 0%, transparent 70%)",
-              boxShadow: "0 0 30px rgba(78,205,196,0.15)",
+              background: "radial-gradient(circle, rgba(182,255,0,0.1) 0%, transparent 70%)",
+              boxShadow: "0 0 30px rgba(182,255,0,0.15)",
             }}
           >
             <span
               className="text-2xl sm:text-3xl font-black neon-pulse"
               style={{
-                color: "#4ecdc4",
-                textShadow: "0 0 7px #4ecdc4, 0 0 15px rgba(78,205,196,0.5)",
+                color: "#3EB95F",
+                textShadow: "0 0 7px #3EB95F, 0 0 15px rgba(182,255,0,0.5)",
               }}
             >
               A
@@ -54,7 +54,7 @@ export function GameLoadingScreen({ blockNumber, status }: GameLoadingScreenProp
           <h2
             className="text-lg sm:text-xl font-bold font-[family-name:var(--font-roobert)] mb-2"
             style={{
-              textShadow: "0 0 10px rgba(78,205,196,0.3)",
+              textShadow: "0 0 10px rgba(182,255,0,0.3)",
             }}
           >
             Block #{blockNumber}
@@ -68,14 +68,14 @@ export function GameLoadingScreen({ blockNumber, status }: GameLoadingScreenProp
         <div
           className="w-40 sm:w-48 h-[2px] bg-white/5 rounded-full overflow-hidden"
           style={{
-            boxShadow: "0 0 8px rgba(78,205,196,0.1)",
+            boxShadow: "0 0 8px rgba(182,255,0,0.1)",
           }}
         >
           <div
             className="h-full rounded-full animate-loading-bar"
             style={{
-              background: "linear-gradient(90deg, #4ecdc4, #45b7d1, #4ecdc4)",
-              boxShadow: "0 0 8px #4ecdc4",
+              background: "linear-gradient(90deg, #3EB95F, #73C98C, #3EB95F)",
+              boxShadow: "0 0 8px #3EB95F",
             }}
           />
         </div>

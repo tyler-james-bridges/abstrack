@@ -21,7 +21,7 @@ export function BackgroundEffects() {
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-[40%]"
         style={{
           background:
-            "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(78,205,196,0.06) 0%, transparent 70%)",
+            "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(182,255,0,0.06) 0%, transparent 70%)",
         }}
       />
 
@@ -31,7 +31,7 @@ export function BackgroundEffects() {
           className="h-[1px] mx-auto"
           style={{
             background:
-              "linear-gradient(90deg, transparent 5%, rgba(78,205,196,0.5) 30%, rgba(69,183,209,0.6) 50%, rgba(78,205,196,0.5) 70%, transparent 95%)",
+              "linear-gradient(90deg, transparent 5%, rgba(182,255,0,0.5) 30%, rgba(148,216,45,0.6) 50%, rgba(182,255,0,0.5) 70%, transparent 95%)",
             animation: "horizon-pulse 4s ease-in-out infinite",
           }}
         />
@@ -40,31 +40,77 @@ export function BackgroundEffects() {
           className="h-16 mx-auto"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(78,205,196,0.08) 0%, rgba(69,183,209,0.03) 40%, transparent 100%)",
+              "linear-gradient(to bottom, rgba(182,255,0,0.08) 0%, rgba(148,216,45,0.03) 40%, transparent 100%)",
             filter: "blur(4px)",
           }}
         />
       </div>
 
-      {/* Perspective grid floor */}
+      {/* Perspective floor grid (retro web3) */}
       <div
         className="absolute left-[-50%] right-[-50%] bottom-[-60%]"
         style={{
           top: "48%",
           backgroundImage: `
-            linear-gradient(to right, rgba(78,205,196,0.06) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(78,205,196,0.06) 1px, transparent 1px)
+            linear-gradient(to right, rgba(62,185,95,0.08) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(62,185,95,0.08) 1px, transparent 1px)
           `,
-          backgroundSize: "80px 60px",
-          transform: "perspective(400px) rotateX(55deg)",
+          backgroundSize: "100px 70px",
+          transform: "perspective(520px) rotateX(62deg)",
           transformOrigin: "center top",
-          animation: "grid-flow 3s linear infinite",
+          animation: "grid-flow 3.4s linear infinite",
           maskImage:
-            "radial-gradient(ellipse 60% 80% at 50% 0%, black 0%, transparent 70%)",
+            "radial-gradient(ellipse 64% 82% at 50% 0%, black 0%, transparent 74%)",
           WebkitMaskImage:
-            "radial-gradient(ellipse 60% 80% at 50% 0%, black 0%, transparent 70%)",
+            "radial-gradient(ellipse 64% 82% at 50% 0%, black 0%, transparent 74%)",
         }}
       />
+
+      {/* Rhythm highway overlay (Guitar Hero vibe) */}
+      <div
+        className="absolute left-1/2 -translate-x-1/2"
+        style={{
+          top: "48%",
+          width: "min(92vw, 980px)",
+          height: "70%",
+          transform: "perspective(560px) rotateX(64deg)",
+          transformOrigin: "center top",
+          maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 8%, rgba(0,0,0,0.15) 78%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 8%, rgba(0,0,0,0.15) 78%, transparent 100%)",
+        }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "linear-gradient(to bottom, rgba(8,12,9,0.05), rgba(8,12,9,0.55) 40%, rgba(8,12,9,0.85))",
+            borderLeft: "1px solid rgba(160,231,171,0.18)",
+            borderRight: "1px solid rgba(160,231,171,0.18)",
+          }}
+        />
+
+        {/* lane separators */}
+        {[25, 50, 75].map((x) => (
+          <div
+            key={x}
+            className="absolute top-0 bottom-0"
+            style={{
+              left: `${x}%`,
+              width: "1px",
+              background: "linear-gradient(to bottom, rgba(160,231,171,0.38), rgba(160,231,171,0.08))",
+            }}
+          />
+        ))}
+
+        {/* center dash flow */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-[3px]"
+          style={{
+            backgroundImage: "repeating-linear-gradient(to bottom, rgba(62,185,95,0.7) 0 16px, transparent 16px 34px)",
+            animation: "road-scroll 0.9s linear infinite",
+            filter: "drop-shadow(0 0 8px rgba(62,185,95,0.35))",
+          }}
+        />
+      </div>
 
       {/* Secondary accent — gold glow top-right */}
       <div

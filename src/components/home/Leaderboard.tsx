@@ -116,11 +116,11 @@ export function Leaderboard() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center justify-center w-10 h-10 text-white/40 hover:text-[#4ecdc4] active:text-[#4ecdc4] transition-colors disabled:opacity-50 rounded-lg"
+            className="flex items-center justify-center w-10 h-10 text-white/40 hover:text-[#3EB95F] active:text-[#3EB95F] transition-colors disabled:opacity-50 rounded-lg"
             title="Refresh leaderboard"
           >
             {refreshing ? (
-              <span className="inline-block w-4 h-4 border border-white/20 border-t-[#4ecdc4] rounded-full animate-spin" />
+              <span className="inline-block w-4 h-4 border border-white/20 border-t-[#3EB95F] rounded-full animate-spin" />
             ) : (
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
@@ -163,7 +163,7 @@ export function Leaderboard() {
                       href={abscanBlockUrl(entry.blockNumber)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[10px] text-white/25 hover:text-[#4ecdc4] transition-colors font-[family-name:var(--font-avenue-mono)]"
+                      className="text-[10px] text-white/25 hover:text-[#3EB95F] transition-colors font-[family-name:var(--font-avenue-mono)]"
                     >
                       Block #{entry.blockNumber.toString()}
                     </a>

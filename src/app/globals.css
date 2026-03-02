@@ -4,24 +4,24 @@
   --background: #0a0a0a;
   --foreground: #ededed;
 
-  /* Abstrack game colors */
-  --abstrack-perfect: #ffd700;
-  --abstrack-great: #4ecdc4;
-  --abstrack-good: #45b7d1;
+  /* Abstract-inspired palette */
+  --abstrack-perfect: #A0E7AB;
+  --abstrack-great: #3EB95F;
+  --abstrack-good: #73C98C;
   --abstrack-miss: #ff6b6b;
 
   /* Lane colors */
   --abstrack-lane-0: #ff6b6b;
-  --abstrack-lane-1: #4ecdc4;
-  --abstrack-lane-2: #45b7d1;
-  --abstrack-lane-3: #f9ca24;
+  --abstrack-lane-1: #3EB95F;
+  --abstrack-lane-2: #73C98C;
+  --abstrack-lane-3: #A0E7AB;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-roobert);
+  --font-mono: var(--font-avenue-mono);
 }
 
 body {
@@ -190,9 +190,9 @@ input[type="range"]::-webkit-slider-thumb {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #4ecdc4;
+  background: #3EB95F;
   margin-top: -9px;
-  box-shadow: 0 0 6px rgba(78, 205, 196, 0.4);
+  box-shadow: 0 0 6px rgba(62, 185, 95, 0.4);
 }
 
 input[type="range"]::-moz-range-track {
@@ -205,9 +205,9 @@ input[type="range"]::-moz-range-thumb {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #4ecdc4;
+  background: #3EB95F;
   border: none;
-  box-shadow: 0 0 6px rgba(78, 205, 196, 0.4);
+  box-shadow: 0 0 6px rgba(62, 185, 95, 0.4);
 }
 
 /* Countdown tick animation */
@@ -254,16 +254,16 @@ input[type="range"]::-moz-range-thumb {
 @keyframes neon-pulse {
   0%, 100% {
     text-shadow:
-      0 0 4px rgba(78, 205, 196, 0.6),
-      0 0 11px rgba(78, 205, 196, 0.4),
-      0 0 19px rgba(78, 205, 196, 0.2);
+      0 0 4px rgba(62, 185, 95, 0.6),
+      0 0 11px rgba(62, 185, 95, 0.4),
+      0 0 19px rgba(62, 185, 95, 0.2);
   }
   50% {
     text-shadow:
-      0 0 7px rgba(78, 205, 196, 0.8),
-      0 0 21px rgba(78, 205, 196, 0.6),
-      0 0 42px rgba(78, 205, 196, 0.3),
-      0 0 82px rgba(78, 205, 196, 0.1);
+      0 0 7px rgba(62, 185, 95, 0.8),
+      0 0 21px rgba(62, 185, 95, 0.6),
+      0 0 42px rgba(62, 185, 95, 0.3),
+      0 0 82px rgba(62, 185, 95, 0.1);
   }
 }
 
@@ -275,24 +275,24 @@ input[type="range"]::-moz-range-thumb {
 @keyframes border-glow {
   0%, 100% {
     box-shadow:
-      0 0 5px rgba(78, 205, 196, 0.1),
-      inset 0 0 5px rgba(78, 205, 196, 0.03);
+      0 0 5px rgba(62, 185, 95, 0.1),
+      inset 0 0 5px rgba(62, 185, 95, 0.03);
   }
   50% {
     box-shadow:
-      0 0 10px rgba(78, 205, 196, 0.15),
-      0 0 20px rgba(78, 205, 196, 0.05),
-      inset 0 0 10px rgba(78, 205, 196, 0.05);
+      0 0 10px rgba(62, 185, 95, 0.15),
+      0 0 20px rgba(62, 185, 95, 0.05),
+      inset 0 0 10px rgba(62, 185, 95, 0.05);
   }
 }
 
 /* Retro card — the standard card style throughout the app */
 .retro-card {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(78, 205, 196, 0.15);
+  border: 1px solid rgba(62, 185, 95, 0.15);
   border-radius: 12px;
   box-shadow:
-    0 0 15px rgba(78, 205, 196, 0.05),
+    0 0 15px rgba(62, 185, 95, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(8px);
   animation: border-glow 4s ease-in-out infinite;
@@ -305,13 +305,18 @@ input[type="range"]::-moz-range-thumb {
   width: 100%;
   height: 1px;
   margin-top: 8px;
-  background: linear-gradient(90deg, transparent, rgba(78, 205, 196, 0.4), transparent);
+  background: linear-gradient(90deg, transparent, rgba(62, 185, 95, 0.4), transparent);
 }
 
 /* Synthwave perspective grid scroll */
 @keyframes grid-flow {
   0% { background-position: 0 0; }
-  100% { background-position: 0 60px; }
+  100% { background-position: 0 70px; }
+}
+
+@keyframes road-scroll {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 34px; }
 }
 
 /* Horizon glow pulse */
@@ -345,7 +350,7 @@ input[type="range"]::-moz-range-thumb {
   border-radius: inherit;
   opacity: 0;
   transition: opacity 0.3s ease;
-  background: linear-gradient(135deg, rgba(78, 205, 196, 0.2), rgba(69, 183, 209, 0.2));
+  background: linear-gradient(135deg, rgba(62, 185, 95, 0.2), rgba(115, 201, 140, 0.2));
   filter: blur(8px);
   z-index: -1;
 }
@@ -363,18 +368,18 @@ input[type="range"]::-moz-range-thumb {
 /* Score counter glow */
 @keyframes score-glow {
   0%, 100% {
-    text-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+    text-shadow: 0 0 10px rgba(62, 185, 95, 0.3);
   }
   50% {
-    text-shadow: 0 0 20px rgba(78, 205, 196, 0.5), 0 0 40px rgba(78, 205, 196, 0.2);
+    text-shadow: 0 0 20px rgba(62, 185, 95, 0.5), 0 0 40px rgba(62, 185, 95, 0.2);
   }
 }
 
 /* Retro input focus glow */
 .retro-input:focus {
-  border-color: rgba(78, 205, 196, 0.5);
+  border-color: rgba(62, 185, 95, 0.5);
   box-shadow:
-    0 0 8px rgba(78, 205, 196, 0.15),
-    inset 0 0 4px rgba(78, 205, 196, 0.05);
+    0 0 8px rgba(62, 185, 95, 0.15),
+    inset 0 0 4px rgba(62, 185, 95, 0.05);
   outline: none;
 }

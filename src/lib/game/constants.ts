@@ -62,16 +62,16 @@ export const LANE_LABELS = ["D", "F", "J", "K"] as const;
 
 export const LANE_COLORS = [
   "#ff6b6b", // red
-  "#4ecdc4", // teal
-  "#45b7d1", // blue
+  "#3EB95F", // teal
+  "#73C98C", // blue
   "#f9ca24", // yellow
 ] as const;
 
 // Grade colors
 export const GRADE_COLORS: Record<TimingGrade, string> = {
   perfect: "#ffd700", // gold
-  great: "#4ecdc4", // green
-  good: "#45b7d1", // blue
+  great: "#3EB95F", // green
+  good: "#73C98C", // blue
   miss: "#ff6b6b", // red
 };
 

@@ -298,7 +298,7 @@ export default function PlayPage({ params }: PlayPageProps) {
 
       {botEnabled && phase !== "finished" && (
         <div
-          className="absolute right-3 z-20 px-3 py-1 rounded-full border border-[#4ecdc4]/30 text-[#4ecdc4] text-[10px] uppercase tracking-widest font-[family-name:var(--font-avenue-mono)] bg-black/60"
+          className="absolute right-3 z-20 px-3 py-1 rounded-full border border-[#3EB95F]/30 text-[#3EB95F] text-[10px] uppercase tracking-widest font-[family-name:var(--font-avenue-mono)] bg-black/60"
           style={{ top: "calc(env(safe-area-inset-top, 0px) + 10px)" }}
           data-game-ui
         >

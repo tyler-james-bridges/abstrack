@@ -62,13 +62,13 @@ export function DailyLeaderboard() {
     <div className="w-full max-w-md mx-auto mt-6">
       <div className="retro-card p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs font-bold font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-fuchsia-300/70 retro-header">
+          <h2 className="text-xs font-bold font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#3EB95F]/70 retro-header">
             Daily Leaderboard {block ? `#${block}` : ""}
           </h2>
           <button
             onClick={shareDaily}
             disabled={!block || rows.length === 0}
-            className="text-[10px] uppercase tracking-wider text-fuchsia-200/70 hover:text-fuchsia-100 disabled:opacity-40"
+            className="text-[10px] uppercase tracking-wider text-[#3EB95F]/70 hover:text-[#3EB95F] disabled:opacity-40"
           >
             Share
           </button>

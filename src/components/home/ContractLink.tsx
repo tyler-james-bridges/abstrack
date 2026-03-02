@@ -10,7 +10,7 @@ export function ContractLink() {
       href={abscanAddressUrl(ABSTRACK_ADDRESS)}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1.5 text-xs text-white/30 hover:text-[#4ecdc4] active:text-[#4ecdc4] transition-colors group min-h-[44px] px-2"
+      className="inline-flex items-center gap-1.5 text-xs text-white/30 hover:text-[#3EB95F] active:text-[#3EB95F] transition-colors group min-h-[44px] px-2"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

@@ -34,9 +34,9 @@ export function DailyChallengeCard() {
 
   return (
     <div className="w-full max-w-md mx-auto mb-6">
-      <div className="retro-card p-5 border border-fuchsia-400/20">
+      <div className="retro-card p-5 border border-[#3EB95F]/20">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-fuchsia-300/70 font-[family-name:var(--font-avenue-mono)]">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-[#3EB95F]/70 font-[family-name:var(--font-avenue-mono)]">
             Daily Beat Challenge · {getTodayChallengeSeed()}
           </p>
           <span className="text-[10px] text-white/45 font-[family-name:var(--font-avenue-mono)]">
@@ -49,7 +49,7 @@ export function DailyChallengeCard() {
         <button
           disabled={!blockNumber}
           onClick={() => blockNumber && router.push(`/play/${blockNumber}`)}
-          className="neon-btn w-full h-11 rounded-lg bg-gradient-to-r from-fuchsia-400 to-cyan-400 text-black font-bold text-sm disabled:opacity-40"
+          className="neon-btn w-full h-11 rounded-lg bg-gradient-to-r from-[#3EB95F] to-[#73C98C] text-black font-bold text-sm disabled:opacity-40"
         >
           Play Daily Challenge
         </button>

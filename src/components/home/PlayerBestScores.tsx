@@ -56,11 +56,11 @@ export function PlayerBestScores() {
     return (
       <div className="w-full max-w-md mx-auto mt-6">
         <div className="retro-card p-6">
-          <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#4ecdc4]/70 retro-header">
+          <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#3EB95F]/70 retro-header">
             Your Scores
           </h2>
           <div className="flex items-center justify-center py-6">
-            <div className="w-5 h-5 border-2 border-[#45b7d1]/20 border-t-[#45b7d1]/60 rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-[#73C98C]/20 border-t-[#73C98C]/60 rounded-full animate-spin" />
           </div>
         </div>
       </div>
@@ -71,7 +71,7 @@ export function PlayerBestScores() {
     return (
       <div className="w-full max-w-md mx-auto mt-6">
         <div className="retro-card p-6">
-          <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#4ecdc4]/70 retro-header">
+          <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#3EB95F]/70 retro-header">
             Your Scores
           </h2>
           <p className="text-sm text-white/30 text-center py-4 font-[family-name:var(--font-avenue-mono)]">
@@ -85,7 +85,7 @@ export function PlayerBestScores() {
   return (
     <div className="w-full max-w-md mx-auto mt-6">
       <div className="retro-card p-6">
-        <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#4ecdc4]/70 retro-header">
+        <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#3EB95F]/70 retro-header">
           Your Scores
         </h2>
         <div className="space-y-1.5 max-h-60 overflow-y-auto">
@@ -99,7 +99,7 @@ export function PlayerBestScores() {
                   href={abscanBlockUrl(entry.blockNumber)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm font-[family-name:var(--font-avenue-mono)] text-white/60 hover:text-[#4ecdc4] transition-colors"
+                  className="text-sm font-[family-name:var(--font-avenue-mono)] text-white/60 hover:text-[#3EB95F] transition-colors"
                 >
                   Block #{entry.blockNumber.toString()}
                 </a>
