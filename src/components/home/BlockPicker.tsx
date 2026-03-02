@@ -4,35 +4,65 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getLatestBlockNumber } from "@/lib/chain/blockData";
 
+function randomBigIntBetween(min: bigint, max: bigint): bigint {
+  const range = max - min + 1n;
+  if (range <= 0n) return min;
+
+  const bits = range.toString(2).length;
+  const bytes = Math.ceil(bits / 8);
+  const randomBytes = new Uint8Array(bytes);
+
+  while (true) {
+    crypto.getRandomValues(randomBytes);
+    let value = 0n;
+    for (const byte of randomBytes) {
+      value = (value << 8n) + BigInt(byte);
+    }
+
+    if (value < range) {
+      return min + value;
+    }
+  }
+}
+
 export function BlockPicker() {
   const router = useRouter();
   const [blockInput, setBlockInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handlePlay = () => {
+    setError(null);
     const num = parseInt(blockInput, 10);
-    if (isNaN(num) || num <= 0) return;
+    if (isNaN(num) || num <= 0) {
+      setError("Enter a valid block number > 0");
+      return;
+    }
     router.push(`/play/${num}`);
   };
 
   const handlePlayLatest = async () => {
+    setError(null);
     setLoading(true);
     try {
       const latest = await getLatestBlockNumber();
       router.push(`/play/${latest}`);
     } catch {
       setLoading(false);
+      setError("Couldn’t fetch latest block. Try again.");
     }
   };
 
   const handleRandomBlock = async () => {
+    setError(null);
     setLoading(true);
     try {
       const latest = await getLatestBlockNumber();
-      const random = BigInt(Math.floor(Math.random() * Number(latest))) + 1n;
+      const random = randomBigIntBetween(1n, latest);
       router.push(`/play/${random}`);
     } catch {
       setLoading(false);
+      setError("Couldn’t fetch random block. Try again.");
     }
   };
 
@@ -44,10 +74,11 @@ export function BlockPicker() {
         </h2>
 
         {/* Block number input */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-2">
           <input
             type="number"
             inputMode="numeric"
+            min={1}
             value={blockInput}
             onChange={(e) => setBlockInput(e.target.value)}
             placeholder="Block #..."
@@ -62,6 +93,12 @@ export function BlockPicker() {
             Play
           </button>
         </div>
+
+        {error && (
+          <p className="mb-4 text-xs text-red-300/90 font-[family-name:var(--font-avenue-mono)]">
+            {error}
+          </p>
+        )}
 
         {/* Quick actions */}
         <div className="flex gap-2">
