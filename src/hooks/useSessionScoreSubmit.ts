@@ -196,6 +196,42 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
         const message =
           err instanceof Error ? err.message : "Unknown error submitting score";
 
+        const isSessionPolicyViolation =
+          message.includes("Session key policy violation") ||
+          message.includes("policy violation") ||
+          message.includes("Status: Unset");
+
+        // Fallback path: if session policy fails, submit directly with AGW client.
+        if (isSessionPolicyViolation && agwClient) {
+          try {
+            clearStoredSession();
+            sessionClientRef.current = null;
+            sessionConfigRef.current = null;
+            signerRef.current = null;
+
+            setStatus("submitting");
+            const directHash = await agwClient.writeContract({
+              abi: ABSTRACK_ABI,
+              address: ABSTRACK_ADDRESS,
+              functionName: "submitScore",
+              args: [blockNumber, score],
+              chain: abstract,
+            });
+
+            setTxHash(directHash);
+            setStatus("success");
+            return directHash;
+          } catch (fallbackErr) {
+            const fallbackMessage =
+              fallbackErr instanceof Error
+                ? fallbackErr.message
+                : "Direct submit fallback failed";
+            setError(fallbackMessage);
+            setStatus("error");
+            throw fallbackErr;
+          }
+        }
+
         // Handle "score must be higher" revert
         if (message.includes("New score must be higher")) {
           setError(
@@ -221,7 +257,7 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
         throw err;
       }
     },
-    [ensureSession]
+    [ensureSession, agwClient]
   );
 
   const reset = useCallback(() => {
