@@ -16,26 +16,26 @@ export function GameLoadingScreen({ blockNumber, status }: GameLoadingScreenProp
       <div className="flex flex-col items-center gap-5 sm:gap-6 relative z-20">
         {/* Animated TEMPO logo with neon glow */}
         <div className="relative">
-          {/* Outer glow ring */}
+          {/* Outer pulse ring */}
           <div
-            className="absolute inset-[-12px] rounded-full animate-ping"
+            className="absolute inset-[-16px] rounded-full animate-pulse-ring"
             style={{
-              border: "1px solid rgba(78,205,196,0.2)",
-              animationDuration: "2s",
+              border: "1px solid rgba(78,205,196,0.25)",
             }}
           />
-          {/* Inner pulse ring */}
+          {/* Middle pulse ring — offset timing */}
           <div
-            className="absolute inset-[-4px] rounded-full animate-pulse"
+            className="absolute inset-[-8px] rounded-full animate-pulse-ring"
             style={{
-              border: "1px solid rgba(69,183,209,0.3)",
+              border: "1px solid rgba(69,183,209,0.2)",
+              animationDelay: "0.8s",
             }}
           />
           <div
             className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center rounded-full"
             style={{
               background: "radial-gradient(circle, rgba(78,205,196,0.1) 0%, transparent 70%)",
-              boxShadow: "0 0 30px rgba(78,205,196,0.15)",
+              boxShadow: "0 0 30px rgba(78,205,196,0.15), 0 0 60px rgba(78,205,196,0.05)",
             }}
           >
             <span
@@ -50,7 +50,7 @@ export function GameLoadingScreen({ blockNumber, status }: GameLoadingScreenProp
           </div>
         </div>
 
-        <div className="text-center">
+        <div className="text-center animate-fade-in-up">
           <h2
             className="text-lg sm:text-xl font-bold font-[family-name:var(--font-roobert)] mb-2"
             style={{
@@ -66,7 +66,7 @@ export function GameLoadingScreen({ blockNumber, status }: GameLoadingScreenProp
 
         {/* Loading bar with neon glow */}
         <div
-          className="w-40 sm:w-48 h-[2px] bg-white/5 rounded-full overflow-hidden"
+          className="w-40 sm:w-48 h-[3px] bg-white/5 rounded-full overflow-hidden"
           style={{
             boxShadow: "0 0 8px rgba(78,205,196,0.1)",
           }}
@@ -75,10 +75,15 @@ export function GameLoadingScreen({ blockNumber, status }: GameLoadingScreenProp
             className="h-full rounded-full animate-loading-bar"
             style={{
               background: "linear-gradient(90deg, #4ecdc4, #45b7d1, #4ecdc4)",
-              boxShadow: "0 0 8px #4ecdc4",
+              boxShadow: "0 0 12px #4ecdc4, 0 0 4px #4ecdc4",
             }}
           />
         </div>
+
+        {/* Hint text */}
+        <p className="text-[10px] text-white/15 font-[family-name:var(--font-avenue-mono)] tracking-wider mt-2 animate-fade-in-up stagger-3">
+          Generating rhythm from block data...
+        </p>
       </div>
     </div>
   );

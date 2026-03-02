@@ -54,11 +54,17 @@ export function PlayerBestScores() {
 
   if (loading) {
     return (
-      <div className="w-full max-w-md mx-auto mt-6">
+      <div className="w-full">
         <div className="retro-card p-6">
-          <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#4ecdc4]/70 retro-header">
-            Your Scores
-          </h2>
+          <div className="flex items-center gap-2 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ecdc4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <h2 className="text-xs font-bold font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#4ecdc4]/70 retro-header">
+              Your Scores
+            </h2>
+          </div>
           <div className="flex items-center justify-center py-6">
             <div className="w-5 h-5 border-2 border-[#45b7d1]/20 border-t-[#45b7d1]/60 rounded-full animate-spin" />
           </div>
@@ -69,30 +75,51 @@ export function PlayerBestScores() {
 
   if (scores.length === 0) {
     return (
-      <div className="w-full max-w-md mx-auto mt-6">
+      <div className="w-full">
         <div className="retro-card p-6">
-          <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#4ecdc4]/70 retro-header">
-            Your Scores
-          </h2>
-          <p className="text-sm text-white/30 text-center py-4 font-[family-name:var(--font-avenue-mono)]">
-            No scores yet. Play a block to get started!
-          </p>
+          <div className="flex items-center gap-2 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ecdc4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <h2 className="text-xs font-bold font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#4ecdc4]/70 retro-header">
+              Your Scores
+            </h2>
+          </div>
+          <div className="text-center py-6">
+            <p className="text-sm text-white/30 font-[family-name:var(--font-avenue-mono)] mb-1">
+              No scores yet
+            </p>
+            <p className="text-xs text-white/20 font-[family-name:var(--font-avenue-mono)]">
+              Play a block to get started!
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-md mx-auto mt-6">
+    <div className="w-full">
       <div className="retro-card p-6">
-        <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#4ecdc4]/70 retro-header">
-          Your Scores
-        </h2>
-        <div className="space-y-1.5 max-h-60 overflow-y-auto">
-          {scores.map((entry) => (
+        <div className="flex items-center gap-2 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ecdc4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          <h2 className="text-xs font-bold font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#4ecdc4]/70 retro-header">
+            Your Scores
+          </h2>
+        </div>
+        <div className="space-y-1 max-h-60 overflow-y-auto">
+          {scores.map((entry, idx) => (
             <div
               key={entry.blockNumber.toString()}
-              className="flex items-center justify-between p-3 min-h-[52px] rounded-lg hover:bg-white/5 transition-colors"
+              className="flex items-center justify-between p-3 min-h-[48px] rounded-xl hover:bg-white/5 transition-colors"
+              style={{
+                borderLeft: idx === 0 ? "2px solid rgba(78,205,196,0.3)" : "2px solid transparent",
+                background: idx === 0 ? "linear-gradient(90deg, rgba(78,205,196,0.05), transparent 60%)" : undefined,
+              }}
             >
               <div>
                 <a
@@ -107,7 +134,13 @@ export function PlayerBestScores() {
                   {timeAgo(entry.timestamp)}
                 </p>
               </div>
-              <p className="text-sm font-bold font-[family-name:var(--font-avenue-mono)] tabular-nums text-white/80">
+              <p
+                className="text-sm font-bold font-[family-name:var(--font-avenue-mono)] tabular-nums"
+                style={{
+                  color: idx === 0 ? "#4ecdc4" : "rgba(255,255,255,0.7)",
+                  textShadow: idx === 0 ? "0 0 8px rgba(78,205,196,0.3)" : undefined,
+                }}
+              >
                 {Number(entry.score).toLocaleString()}
               </p>
             </div>

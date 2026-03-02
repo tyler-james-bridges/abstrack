@@ -37,6 +37,48 @@ const GRADE_COLORS_MAP: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// Confetti particles for S and A grades
+// ---------------------------------------------------------------------------
+
+const CONFETTI_COLORS = ["#ffd700", "#4ecdc4", "#45b7d1", "#ff6b6b", "#f9ca24", "#a882ff"];
+
+function CelebrationConfetti({ grade }: { grade: string }) {
+  if (grade !== "S" && grade !== "A") return null;
+
+  const particles = useMemo(() => {
+    return Array.from({ length: 40 }, (_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      delay: `${Math.random() * 1.5}s`,
+      duration: `${1.5 + Math.random() * 2}s`,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      size: 4 + Math.random() * 6,
+      rotation: Math.random() * 360,
+    }));
+  }, []);
+
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden z-30">
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute top-0"
+          style={{
+            left: p.left,
+            width: p.size,
+            height: p.size,
+            backgroundColor: p.color,
+            borderRadius: Math.random() > 0.5 ? "50%" : "1px",
+            animation: `confetti-fall ${p.duration} ease-in ${p.delay} both`,
+            transform: `rotate(${p.rotation}deg)`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Validation
 // ---------------------------------------------------------------------------
 
@@ -191,15 +233,19 @@ export function GameOverScreen({
   const accuracy = (finalScore.accuracy * 100).toFixed(1);
   const gradeColor = GRADE_COLORS_MAP[finalScore.letterGrade] ?? "#fff";
   const gradeGlow = GRADE_GLOW[finalScore.letterGrade] ?? "";
+  const isHighGrade = finalScore.letterGrade === "S" || finalScore.letterGrade === "A";
 
   return (
     <div className="flex flex-col items-center min-h-dvh bg-black text-white overflow-y-auto safe-all">
       {/* CRT scanline overlay */}
       <div className="absolute inset-0 crt-scanlines z-10 pointer-events-none" />
 
+      {/* Celebration confetti for S/A grades */}
+      <CelebrationConfetti grade={finalScore.letterGrade} />
+
       <div className="w-full max-w-md mx-auto px-4 py-6 sm:py-10 flex flex-col items-center justify-center flex-1 relative z-20">
         {/* Letter Grade — dramatic neon display */}
-        <div className="w-full text-center mb-5 sm:mb-8 py-8 sm:py-10 relative">
+        <div className="w-full text-center mb-5 sm:mb-8 py-8 sm:py-10 relative animate-score-pop">
           {/* Background glow */}
           <div
             className="absolute inset-0 rounded-2xl"
@@ -208,14 +254,24 @@ export function GameOverScreen({
               border: `1px solid ${gradeColor}20`,
             }}
           />
+          {/* Extra glow ring for S rank */}
+          {finalScore.letterGrade === "S" && (
+            <div
+              className="absolute inset-[-4px] rounded-2xl animate-pulse-ring"
+              style={{
+                border: `1px solid ${gradeColor}30`,
+              }}
+            />
+          )}
           <p className="relative text-[10px] sm:text-xs text-white/40 uppercase tracking-[0.3em] mb-2 font-[family-name:var(--font-avenue-mono)]">
             Rank
           </p>
           <p
-            className="relative text-7xl sm:text-9xl font-black font-[family-name:var(--font-roobert)]"
+            className={`relative text-7xl sm:text-9xl font-black font-[family-name:var(--font-roobert)] ${isHighGrade ? "text-shimmer" : ""}`}
             style={{
-              color: gradeColor,
-              textShadow: gradeGlow,
+              color: isHighGrade ? undefined : gradeColor,
+              textShadow: isHighGrade ? undefined : gradeGlow,
+              WebkitTextFillColor: isHighGrade ? undefined : gradeColor,
             }}
           >
             {finalScore.letterGrade}
@@ -223,7 +279,7 @@ export function GameOverScreen({
         </div>
 
         {/* Score — big monospace number */}
-        <div className="text-center mb-4 sm:mb-6">
+        <div className="text-center mb-4 sm:mb-6 animate-fade-in-up stagger-1">
           <p
             className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-avenue-mono)] tabular-nums"
             style={{
@@ -238,7 +294,7 @@ export function GameOverScreen({
         </div>
 
         {/* Stats Grid */}
-        <div className="w-full grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
+        <div className="w-full grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6 animate-fade-in-up stagger-2">
           <div className="retro-card p-3 text-center">
             <p className="text-[10px] sm:text-xs text-white/30 uppercase font-[family-name:var(--font-avenue-mono)] tracking-wider">
               Max Combo
@@ -258,11 +314,11 @@ export function GameOverScreen({
         </div>
 
         {/* Grade Breakdown */}
-        <div className="w-full grid grid-cols-4 gap-1.5 sm:gap-2 mb-5 sm:mb-8">
+        <div className="w-full grid grid-cols-4 gap-1.5 sm:gap-2 mb-5 sm:mb-8 animate-fade-in-up stagger-3">
           {(["perfect", "great", "good", "miss"] as const).map((grade) => (
             <div
               key={grade}
-              className="text-center rounded-lg p-2 border"
+              className="text-center rounded-xl p-2.5 border"
               style={{
                 borderColor: GRADE_COLORS[grade] + "20",
                 background: GRADE_COLORS[grade] + "08",
@@ -282,35 +338,48 @@ export function GameOverScreen({
         </div>
 
         {/* Block info */}
-        <p className="text-center text-[10px] text-white/25 mb-4 sm:mb-6 font-[family-name:var(--font-avenue-mono)] tracking-wider">
+        <p className="text-center text-[10px] text-white/25 mb-4 sm:mb-6 font-[family-name:var(--font-avenue-mono)] tracking-wider animate-fade-in-up stagger-4">
           Block #{finalScore.blockNumber} | {finalScore.totalNotes} notes
         </p>
 
         {/* Error display */}
         {displayError && (
-          <div className="w-full mb-3 sm:mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <div className="w-full mb-3 sm:mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
             <p className="text-sm text-red-400">{displayError}</p>
           </div>
         )}
 
         {/* Actions */}
-        <div className="w-full flex flex-col gap-3">
+        <div className="w-full flex flex-col gap-3 animate-fade-in-up stagger-4">
           {address && !receipt && (
             <button
               onClick={handleSubmitScore}
               disabled={isSubmitting || submitted || !validation.valid}
-              className="neon-btn w-full h-12 sm:h-14 rounded-full bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-roobert)]"
+              className="neon-btn w-full h-12 sm:h-14 rounded-full bg-gradient-to-r from-[#4ecdc4] to-[#45b7d1] text-black font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-roobert)] flex items-center justify-center gap-2"
               style={{
                 boxShadow: "0 0 20px rgba(78,205,196,0.2)",
               }}
             >
-              {isSubmitting
-                ? "Submitting..."
-                : submitted && !submissionError
-                  ? "Confirming..."
-                  : !validation.valid
-                    ? "Score Invalid"
-                    : "Submit Score (Gas-Free)"}
+              {isSubmitting ? (
+                <>
+                  <span className="inline-block w-4 h-4 border-2 border-black/20 border-t-black/60 rounded-full animate-spin" />
+                  Submitting...
+                </>
+              ) : submitted && !submissionError ? (
+                <>
+                  <span className="inline-block w-4 h-4 border-2 border-black/20 border-t-black/60 rounded-full animate-spin" />
+                  Confirming...
+                </>
+              ) : !validation.valid ? (
+                "Score Invalid"
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                  Submit Score (Gas-Free)
+                </>
+              )}
             </button>
           )}
 
@@ -328,15 +397,20 @@ export function GameOverScreen({
 
           {receipt && (
             <div
-              className="text-center p-3 rounded-lg border"
+              className="text-center p-4 rounded-xl border animate-fade-in-up"
               style={{
                 background: "rgba(78,205,196,0.05)",
                 borderColor: "rgba(78,205,196,0.2)",
               }}
             >
-              <p className="text-sm text-[#4ecdc4] font-medium font-[family-name:var(--font-roobert)]">
-                Score submitted on-chain!
-              </p>
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ecdc4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <p className="text-sm text-[#4ecdc4] font-medium font-[family-name:var(--font-roobert)]">
+                  Score submitted on-chain!
+                </p>
+              </div>
               <a
                 href={abscanTxUrl(receipt.transactionHash)}
                 target="_blank"
@@ -350,15 +424,22 @@ export function GameOverScreen({
 
           <button
             onClick={onPlayAgain}
-            className="neon-btn w-full h-12 rounded-full border border-[#4ecdc4]/20 text-[#4ecdc4]/80 font-bold text-sm hover:bg-[#4ecdc4]/5 hover:border-[#4ecdc4]/30 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)]"
+            className="neon-btn w-full h-12 rounded-full border border-[#4ecdc4]/20 text-[#4ecdc4]/80 font-bold text-sm hover:bg-[#4ecdc4]/5 hover:border-[#4ecdc4]/30 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)] flex items-center justify-center gap-2"
           >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
             Play Again
           </button>
 
           <button
             onClick={() => router.push("/")}
-            className="w-full h-12 text-white/40 text-sm hover:text-white/70 active:text-white transition-colors font-[family-name:var(--font-roobert)]"
+            className="w-full h-12 text-white/40 text-sm hover:text-white/70 active:text-white transition-colors font-[family-name:var(--font-roobert)] flex items-center justify-center gap-2"
           >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
             Home
           </button>
         </div>
@@ -366,13 +447,13 @@ export function GameOverScreen({
         {/* Keyboard shortcuts */}
         <div className="hidden sm:flex justify-center gap-4 mt-3 text-[10px] text-white/20 font-[family-name:var(--font-avenue-mono)]">
           <span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 text-white/30 border border-white/10">
+            <kbd className="px-1.5 py-0.5 rounded bg-white/5 text-white/30 border border-white/10">
               R
             </kbd>{" "}
             Replay
           </span>
           <span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 text-white/30 border border-white/10">
+            <kbd className="px-1.5 py-0.5 rounded bg-white/5 text-white/30 border border-white/10">
               Esc
             </kbd>{" "}
             Home
