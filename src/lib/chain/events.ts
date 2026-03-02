@@ -115,6 +115,7 @@ export function watchScoreSubmitted(onScore: ScoreEventCallback): () => void {
   const unwatch = publicClient.watchEvent({
     address: TEMPO_SCORE_REGISTRY_ADDRESS,
     event: SCORE_SUBMITTED_EVENT,
+    pollingInterval: 30_000,
     onLogs: (logs) => {
       for (const log of logs) {
         onScore({
