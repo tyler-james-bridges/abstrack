@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useWaitForTransactionReceipt } from "wagmi";
@@ -8,6 +8,9 @@ import type { FinalScore } from "@/lib/game/types";
 import { GRADE_COLORS, MAX_SCORE } from "@/lib/game/constants";
 import { useSessionScoreSubmit } from "@/hooks/useSessionScoreSubmit";
 import { abscanTxUrl } from "@/lib/format";
+import { publicClient, getLatestBlockNumber } from "@/lib/chain/blockData";
+import { ABSTRACK_ABI, ABSTRACK_ADDRESS } from "@/lib/chain/scoreContract";
+import { pickDailyChallengeBlock } from "@/lib/game/dailyChallenge";
 
 interface GameOverScreenProps {
   finalScore: FinalScore;
@@ -123,6 +126,9 @@ export function GameOverScreen({
   const router = useRouter();
   const { address } = useAccount();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [canShareDaily, setCanShareDaily] = useState(false);
+  const [dailyLeadText, setDailyLeadText] = useState<string | null>(null);
+  const autoShareAttemptedRef = useRef(false);
 
   const {
     submitScore,
@@ -138,6 +144,20 @@ export function GameOverScreen({
   const isBusy =
     sessionStatus === "submitting" ||
     (txHash != null && !receipt);
+
+  const shareDailyLead = useCallback(async () => {
+    if (!dailyLeadText) return;
+    const url = typeof window !== "undefined" ? window.location.origin : "https://abstrack.live";
+    try {
+      if (navigator.share) {
+        await navigator.share({ text: dailyLeadText, url });
+      } else {
+        await navigator.clipboard.writeText(`${dailyLeadText} ${url}`);
+      }
+    } catch {
+      // no-op
+    }
+  }, [dailyLeadText]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -157,6 +177,49 @@ export function GameOverScreen({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  useEffect(() => {
+    if (!receipt || autoShareAttemptedRef.current) return;
+
+    const checkDailyLeadAndShare = async () => {
+      try {
+        const latest = await getLatestBlockNumber();
+        const dailyBlock = pickDailyChallengeBlock(latest);
+        if (dailyBlock !== BigInt(finalScore.blockNumber)) return;
+
+        const result = await publicClient.readContract({
+          address: ABSTRACK_ADDRESS,
+          abi: ABSTRACK_ABI,
+          functionName: "getBlockScores",
+          args: [dailyBlock],
+        });
+
+        const entries = [...(result as unknown as Array<{ player: string; score: bigint }>)
+        ].sort((a, b) => Number(b.score - a.score));
+
+        const top = entries[0];
+        if (!top) return;
+        const isLead = Number(top.score) <= finalScore.totalScore;
+        if (!isLead) return;
+
+        const leadText = `I just hit #1 on today’s ABSTRACK challenge (#${finalScore.blockNumber}) with ${finalScore.totalScore.toLocaleString()} points. Catch me if you can.`;
+        setDailyLeadText(leadText);
+        setCanShareDaily(true);
+
+        autoShareAttemptedRef.current = true;
+        if (navigator.share) {
+          await navigator.share({
+            text: leadText,
+            url: typeof window !== "undefined" ? window.location.origin : "https://abstrack.live",
+          });
+        }
+      } catch {
+        // no-op
+      }
+    };
+
+    checkDailyLeadAndShare();
+  }, [receipt, finalScore.blockNumber, finalScore.totalScore]);
 
   const validation = useMemo(
     () => validateScore(finalScore.totalScore, finalScore.blockNumber),
@@ -342,6 +405,14 @@ export function GameOverScreen({
               >
                 View on Abscan
               </a>
+              {canShareDaily && (
+                <button
+                  onClick={shareDailyLead}
+                  className="mt-3 w-full h-10 rounded-full border border-fuchsia-400/30 text-fuchsia-200 text-xs uppercase tracking-wider hover:bg-fuchsia-400/10"
+                >
+                  Share #1 Daily Run
+                </button>
+              )}
             </div>
           )}
 
