@@ -55,9 +55,9 @@ export function estimateDifficulty(
 }
 
 /**
- * Abscan URLs for Abstract Testnet.
+ * Abscan URLs for Abstract mainnet.
  */
-export const ABSCAN_BASE_URL = "https://sepolia.abscan.org";
+export const ABSCAN_BASE_URL = "https://abscan.org";
 
 export function abscanTxUrl(hash: string): string {
   return `${ABSCAN_BASE_URL}/tx/${hash}`;
