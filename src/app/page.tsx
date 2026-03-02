@@ -6,6 +6,8 @@ import { SignInButton } from "@/components/wallet/SignInButton";
 import { BlockPicker } from "@/components/home/BlockPicker";
 import { RecentBlocks } from "@/components/home/RecentBlocks";
 import { Leaderboard } from "@/components/home/Leaderboard";
+import { DailyChallengeCard } from "@/components/home/DailyChallengeCard";
+import { DailyLeaderboard } from "@/components/home/DailyLeaderboard";
 import { PlayerBestScores } from "@/components/home/PlayerBestScores";
 import { ContractLink } from "@/components/home/ContractLink";
 
@@ -37,7 +39,9 @@ export default function Home() {
         {/* Auth or Game */}
         {address ? (
           <>
+            <DailyChallengeCard />
             <BlockPicker />
+            <DailyLeaderboard />
             <RecentBlocks />
             <PlayerBestScores />
             <Leaderboard />

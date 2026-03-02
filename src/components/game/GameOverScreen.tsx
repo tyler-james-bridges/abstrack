@@ -349,7 +349,7 @@ export function GameOverScreen({
             onClick={onPlayAgain}
             className="neon-btn w-full h-12 rounded-full border border-[#4ecdc4]/20 text-[#4ecdc4]/80 font-bold text-sm hover:bg-[#4ecdc4]/5 hover:border-[#4ecdc4]/30 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)]"
           >
-            Play Again
+            Instant Rematch
           </button>
 
           <button
