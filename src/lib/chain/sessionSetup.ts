@@ -33,13 +33,17 @@ function buildSubmitScoreCallPolicy(): CallPolicy {
 /**
  * Build a full SessionConfig for the given session signer address.
  * The session is scoped exclusively to `submitScore` and expires after 1 hour.
+ *
+ * When restoring a persisted session, pass the original `expiresAt` so the
+ * config hash matches what was registered on-chain.
  */
 export function buildAbstrackSessionConfig(
-  signerAddress: `0x${string}`
+  signerAddress: `0x${string}`,
+  existingExpiresAt?: bigint
 ): SessionConfig {
-  const expiresAt = BigInt(
-    Math.floor(Date.now() / 1000) + SESSION_DURATION_SECONDS
-  );
+  const expiresAt =
+    existingExpiresAt ??
+    BigInt(Math.floor(Date.now() / 1000) + SESSION_DURATION_SECONDS);
 
   return {
     signer: signerAddress,

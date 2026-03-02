@@ -74,6 +74,12 @@ function parseSubmissionError(err: unknown): string {
     return "Score exceeds the maximum allowed value (1,000,000).";
   }
   if (
+    message.includes("policy violation") ||
+    message.includes("Status: Unset")
+  ) {
+    return "Session expired. Please try again to create a new session.";
+  }
+  if (
     message.includes("rejected") ||
     message.includes("denied") ||
     message.includes("User rejected")

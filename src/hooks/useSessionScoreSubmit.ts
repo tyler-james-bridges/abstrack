@@ -146,7 +146,11 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
     }
 
     const signer = privateKeyToAccount(privateKey);
-    const sessionConfig = buildAbstrackSessionConfig(signer.address);
+    // When restoring, pass the original expiresAt so the config hash matches on-chain
+    const sessionConfig = buildAbstrackSessionConfig(
+      signer.address,
+      stored ? BigInt(stored.expiresAt) : undefined
+    );
 
     // If we don't have a stored session, we need to create one on-chain (this shows a popup)
     if (!stored) {
@@ -240,11 +244,19 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
         } else if (message.includes("Score exceeds maximum")) {
           setError("Score exceeds the maximum allowed value (1,000,000).");
         } else if (
+          message.includes("policy violation") ||
+          message.includes("Status: Unset")
+        ) {
+          setError("Session expired. Please try again to create a new session.");
+          clearStoredSession();
+          sessionClientRef.current = null;
+          sessionConfigRef.current = null;
+          signerRef.current = null;
+        } else if (
           message.includes("rejected") ||
           message.includes("denied")
         ) {
           setError("Transaction was rejected. Please try again.");
-          // Clear stored session if it was rejected during creation
           clearStoredSession();
           sessionClientRef.current = null;
           sessionConfigRef.current = null;
