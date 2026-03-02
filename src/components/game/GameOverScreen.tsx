@@ -302,15 +302,13 @@ export function GameOverScreen({
                 boxShadow: "0 0 20px rgba(78,205,196,0.2)",
               }}
             >
-              {sessionStatus === "creating_session"
-                ? "Approving Session..."
-                : sessionStatus === "submitting"
-                  ? "Submitting..."
-                  : txHash && !receipt
-                    ? "Confirming..."
-                    : !validation.valid
-                      ? "Score Invalid"
-                      : "Submit Score (Gas-Free)"}
+              {sessionStatus === "submitting"
+                ? "Submitting..."
+                : txHash && !receipt
+                  ? "Confirming..."
+                  : !validation.valid
+                    ? "Score Invalid"
+                    : "Submit Score (Gas-Free)"}
             </button>
           )}
 
