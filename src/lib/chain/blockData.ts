@@ -1,8 +1,8 @@
 import { createPublicClient, http } from "viem";
-import { abstractTestnet } from "viem/chains";
+import { abstract } from "viem/chains";
 
 export const publicClient = createPublicClient({
-  chain: abstractTestnet,
+  chain: abstract,
   transport: http(),
 });
 

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import type { GameState } from "@/lib/game/types";
 
-const VOLUME_STORAGE_KEY = "tempo-volume";
+const VOLUME_STORAGE_KEY = "abstrack-volume";
 
 /** Convert a 0-100 slider value to dB (-60 to 0) */
 function sliderToDb(value: number): number {

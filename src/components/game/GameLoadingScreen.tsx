@@ -14,7 +14,7 @@ export function GameLoadingScreen({ blockNumber, status }: GameLoadingScreenProp
       <div className="absolute inset-0 crt-scanlines z-10" />
 
       <div className="flex flex-col items-center gap-5 sm:gap-6 relative z-20">
-        {/* Animated TEMPO logo with neon glow */}
+        {/* Animated Abstrack logo with neon glow */}
         <div className="relative">
           {/* Outer glow ring */}
           <div
@@ -45,7 +45,7 @@ export function GameLoadingScreen({ blockNumber, status }: GameLoadingScreenProp
                 textShadow: "0 0 7px #4ecdc4, 0 0 15px rgba(78,205,196,0.5)",
               }}
             >
-              T
+              A
             </span>
           </div>
         </div>

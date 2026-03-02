@@ -7,7 +7,7 @@ interface HowToPlayOverlayProps {
   onDismiss: () => void;
 }
 
-const STORAGE_KEY = "tempo-how-to-play-seen";
+const STORAGE_KEY = "abstrack-how-to-play-seen";
 
 export function hasSeenHowToPlay(): boolean {
   if (typeof window === "undefined") return true;

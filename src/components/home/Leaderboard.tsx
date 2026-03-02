@@ -3,8 +3,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { publicClient } from "@/lib/chain/blockData";
 import {
-  TEMPO_SCORE_REGISTRY_ABI,
-  TEMPO_SCORE_REGISTRY_ADDRESS,
+  ABSTRACK_ABI,
+  ABSTRACK_ADDRESS,
 } from "@/lib/chain/scoreContract";
 import { watchScoreSubmitted } from "@/lib/chain/events";
 import { truncateAddress, timeAgo, abscanBlockUrl } from "@/lib/format";
@@ -30,8 +30,8 @@ export function Leaderboard() {
   const fetchScores = useCallback(async () => {
     try {
       const result = await publicClient.readContract({
-        address: TEMPO_SCORE_REGISTRY_ADDRESS,
-        abi: TEMPO_SCORE_REGISTRY_ABI,
+        address: ABSTRACK_ADDRESS,
+        abi: ABSTRACK_ABI,
         functionName: "getGlobalTopScores",
         args: [10n],
       });

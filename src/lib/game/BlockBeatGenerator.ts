@@ -38,7 +38,7 @@ function hashToSeed(hash: string): number {
  * Map gasUsed to BPM. Higher gas = faster tempo.
  */
 function gasUsedToBPM(gasUsed: bigint): number {
-  // Abstract testnet gas ranges roughly 21000 to ~30M per block
+  // Abstract gas ranges roughly 21000 to ~30M per block
   // Normalize to 0-1 range using log scale for better distribution
   const gasNum = Number(gasUsed);
   const logGas = Math.log10(Math.max(gasNum, 1));

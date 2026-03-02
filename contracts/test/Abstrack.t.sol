@@ -2,17 +2,17 @@
 pragma solidity ^0.8.13;
 
 import {Test} from "forge-std/Test.sol";
-import {TempoScoreRegistry} from "../src/TempoScoreRegistry.sol";
+import {Abstrack} from "../src/Abstrack.sol";
 
-contract TempoScoreRegistryTest is Test {
-    TempoScoreRegistry public registry;
+contract AbstrackTest is Test {
+    Abstrack public registry;
 
     address public alice = address(0xA11CE);
     address public bob = address(0xB0B);
     address public carol = address(0xCA801);
 
     function setUp() public {
-        registry = new TempoScoreRegistry();
+        registry = new Abstrack();
     }
 
     // -------------------------------------------------------------------------
@@ -23,7 +23,7 @@ contract TempoScoreRegistryTest is Test {
         vm.prank(alice);
         registry.submitScore(100, 500_000);
 
-        TempoScoreRegistry.ScoreEntry[] memory scores = registry.getPlayerScores(alice);
+        Abstrack.ScoreEntry[] memory scores = registry.getPlayerScores(alice);
         assertEq(scores.length, 1);
         assertEq(scores[0].player, alice);
         assertEq(scores[0].blockNumber, 100);
@@ -33,7 +33,7 @@ contract TempoScoreRegistryTest is Test {
     function test_SubmitScore_EmitsEvent() public {
         vm.prank(alice);
         vm.expectEmit(true, true, false, true);
-        emit TempoScoreRegistry.ScoreSubmitted(alice, 100, 750_000);
+        emit Abstrack.ScoreSubmitted(alice, 100, 750_000);
         registry.submitScore(100, 750_000);
     }
 
@@ -45,7 +45,7 @@ contract TempoScoreRegistryTest is Test {
         vm.prank(alice);
         registry.submitScore(1, 1_000_000);
 
-        TempoScoreRegistry.ScoreEntry[] memory scores = registry.getPlayerScores(alice);
+        Abstrack.ScoreEntry[] memory scores = registry.getPlayerScores(alice);
         assertEq(scores[0].score, 1_000_000);
     }
 
@@ -53,7 +53,7 @@ contract TempoScoreRegistryTest is Test {
         vm.prank(alice);
         registry.submitScore(1, 0);
 
-        TempoScoreRegistry.ScoreEntry[] memory scores = registry.getPlayerScores(alice);
+        Abstrack.ScoreEntry[] memory scores = registry.getPlayerScores(alice);
         assertEq(scores[0].score, 0);
     }
 
@@ -73,7 +73,7 @@ contract TempoScoreRegistryTest is Test {
         registry.submitScore(100, 300_000);
         registry.submitScore(100, 600_000); // higher -- should succeed
 
-        TempoScoreRegistry.ScoreEntry[] memory scores = registry.getPlayerScores(alice);
+        Abstrack.ScoreEntry[] memory scores = registry.getPlayerScores(alice);
         assertEq(scores.length, 1);
         assertEq(scores[0].score, 600_000);
 
@@ -116,7 +116,7 @@ contract TempoScoreRegistryTest is Test {
         vm.prank(carol);
         registry.submitScore(42, 300_000);
 
-        TempoScoreRegistry.ScoreEntry[] memory scores = registry.getBlockScores(42);
+        Abstrack.ScoreEntry[] memory scores = registry.getBlockScores(42);
         assertEq(scores.length, 3);
         assertEq(scores[0].player, alice);
         assertEq(scores[0].score, 100_000);
@@ -127,7 +127,7 @@ contract TempoScoreRegistryTest is Test {
     }
 
     function test_GetBlockScores_Empty() public view {
-        TempoScoreRegistry.ScoreEntry[] memory scores = registry.getBlockScores(999);
+        Abstrack.ScoreEntry[] memory scores = registry.getBlockScores(999);
         assertEq(scores.length, 0);
     }
 
@@ -137,7 +137,7 @@ contract TempoScoreRegistryTest is Test {
         registry.submitScore(42, 900_000);
         vm.stopPrank();
 
-        TempoScoreRegistry.ScoreEntry[] memory scores = registry.getBlockScores(42);
+        Abstrack.ScoreEntry[] memory scores = registry.getBlockScores(42);
         assertEq(scores.length, 1);
         assertEq(scores[0].score, 900_000);
     }
@@ -153,7 +153,7 @@ contract TempoScoreRegistryTest is Test {
         registry.submitScore(30, 300_000);
         vm.stopPrank();
 
-        TempoScoreRegistry.ScoreEntry[] memory scores = registry.getPlayerScores(alice);
+        Abstrack.ScoreEntry[] memory scores = registry.getPlayerScores(alice);
         assertEq(scores.length, 3);
         assertEq(scores[0].blockNumber, 10);
         assertEq(scores[0].score, 100_000);
@@ -164,7 +164,7 @@ contract TempoScoreRegistryTest is Test {
     }
 
     function test_GetPlayerScores_Empty() public view {
-        TempoScoreRegistry.ScoreEntry[] memory scores = registry.getPlayerScores(alice);
+        Abstrack.ScoreEntry[] memory scores = registry.getPlayerScores(alice);
         assertEq(scores.length, 0);
     }
 
@@ -176,7 +176,7 @@ contract TempoScoreRegistryTest is Test {
         vm.prank(alice);
         registry.submitScore(1, 500_000);
 
-        TempoScoreRegistry.ScoreEntry[] memory top = registry.getGlobalTopScores(10);
+        Abstrack.ScoreEntry[] memory top = registry.getGlobalTopScores(10);
         assertEq(top.length, 1);
         assertEq(top[0].player, alice);
         assertEq(top[0].score, 500_000);
@@ -192,7 +192,7 @@ contract TempoScoreRegistryTest is Test {
         vm.prank(carol);
         registry.submitScore(3, 600_000);
 
-        TempoScoreRegistry.ScoreEntry[] memory top = registry.getGlobalTopScores(10);
+        Abstrack.ScoreEntry[] memory top = registry.getGlobalTopScores(10);
         assertEq(top.length, 3);
         assertEq(top[0].score, 900_000);
         assertEq(top[0].player, bob);
@@ -210,7 +210,7 @@ contract TempoScoreRegistryTest is Test {
             registry.submitScore(i, i * 50_000);
         }
 
-        TempoScoreRegistry.ScoreEntry[] memory top = registry.getGlobalTopScores(10);
+        Abstrack.ScoreEntry[] memory top = registry.getGlobalTopScores(10);
         assertEq(top.length, 10);
 
         // The top entry should be the highest score: 12 * 50_000 = 600_000.
@@ -231,7 +231,7 @@ contract TempoScoreRegistryTest is Test {
             registry.submitScore(i, i * 100_000);
         }
 
-        TempoScoreRegistry.ScoreEntry[] memory topBefore = registry.getGlobalTopScores(10);
+        Abstrack.ScoreEntry[] memory topBefore = registry.getGlobalTopScores(10);
         assertEq(topBefore.length, 10);
         // Lowest entry is 100_000.
         assertEq(topBefore[9].score, 100_000);
@@ -241,7 +241,7 @@ contract TempoScoreRegistryTest is Test {
         vm.prank(newPlayer);
         registry.submitScore(99, 550_000);
 
-        TempoScoreRegistry.ScoreEntry[] memory topAfter = registry.getGlobalTopScores(10);
+        Abstrack.ScoreEntry[] memory topAfter = registry.getGlobalTopScores(10);
         assertEq(topAfter.length, 10);
 
         // The old lowest (100_000) should be gone; new lowest is 200_000.
@@ -267,7 +267,7 @@ contract TempoScoreRegistryTest is Test {
         vm.prank(newPlayer);
         registry.submitScore(99, 50_000);
 
-        TempoScoreRegistry.ScoreEntry[] memory top = registry.getGlobalTopScores(10);
+        Abstrack.ScoreEntry[] memory top = registry.getGlobalTopScores(10);
         assertEq(top.length, 10);
         // The bottom should still be 100_000.
         assertEq(top[9].score, 100_000);
@@ -284,7 +284,7 @@ contract TempoScoreRegistryTest is Test {
         vm.prank(alice);
         registry.submitScore(1, 500_000);
 
-        TempoScoreRegistry.ScoreEntry[] memory top = registry.getGlobalTopScores(10);
+        Abstrack.ScoreEntry[] memory top = registry.getGlobalTopScores(10);
         assertEq(top.length, 2);
         assertEq(top[0].score, 500_000);
         assertEq(top[0].player, alice);
@@ -306,7 +306,7 @@ contract TempoScoreRegistryTest is Test {
         vm.prank(carol);
         registry.submitScore(3, 300_000);
 
-        TempoScoreRegistry.ScoreEntry[] memory top = registry.getGlobalTopScores(2);
+        Abstrack.ScoreEntry[] memory top = registry.getGlobalTopScores(2);
         assertEq(top.length, 2);
         assertEq(top[0].score, 300_000);
         assertEq(top[1].score, 200_000);
@@ -316,7 +316,7 @@ contract TempoScoreRegistryTest is Test {
         vm.prank(alice);
         registry.submitScore(1, 100_000);
 
-        TempoScoreRegistry.ScoreEntry[] memory top = registry.getGlobalTopScores(100);
+        Abstrack.ScoreEntry[] memory top = registry.getGlobalTopScores(100);
         assertEq(top.length, 1);
     }
 
@@ -334,20 +334,20 @@ contract TempoScoreRegistryTest is Test {
         registry.submitScore(blockNum, score);
 
         // Verify player scores.
-        TempoScoreRegistry.ScoreEntry[] memory pScores = registry.getPlayerScores(alice);
+        Abstrack.ScoreEntry[] memory pScores = registry.getPlayerScores(alice);
         assertEq(pScores.length, 1);
         assertEq(pScores[0].score, score);
         assertEq(pScores[0].blockNumber, blockNum);
         assertEq(pScores[0].player, alice);
 
         // Verify block scores.
-        TempoScoreRegistry.ScoreEntry[] memory bScores = registry.getBlockScores(blockNum);
+        Abstrack.ScoreEntry[] memory bScores = registry.getBlockScores(blockNum);
         assertEq(bScores.length, 1);
         assertEq(bScores[0].score, score);
         assertEq(bScores[0].player, alice);
 
         // Verify top scores contain this entry.
-        TempoScoreRegistry.ScoreEntry[] memory top = registry.getGlobalTopScores(10);
+        Abstrack.ScoreEntry[] memory top = registry.getGlobalTopScores(10);
         assertGe(top.length, 1);
         assertEq(top[0].score, score);
     }

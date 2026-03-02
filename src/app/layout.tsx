@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TEMPO | Blockchain Rhythm Game",
+  title: "ABSTRACK | Blockchain Rhythm Game",
   description: "A rhythm game where every blockchain block creates a unique beat. Play, score, and compete on Abstract.",
 };
 

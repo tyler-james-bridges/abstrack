@@ -6,7 +6,7 @@ import {
   type CallPolicy,
 } from "@abstract-foundation/agw-client/sessions";
 import {
-  TEMPO_SCORE_REGISTRY_ADDRESS,
+  ABSTRACK_ADDRESS,
   PAYMASTER_ADDRESS,
 } from "./scoreContract";
 
@@ -16,13 +16,13 @@ import {
 const SESSION_DURATION_SECONDS = 60 * 60;
 
 /**
- * Build a CallPolicy scoped to submitScore(uint256,uint256) on the TempoScoreRegistry.
+ * Build a CallPolicy scoped to submitScore(uint256,uint256) on the Abstrack contract.
  * - No ETH value required (the function is nonpayable, gas is sponsored).
  * - No parameter constraints -- any blockNumber/score combination is allowed.
  */
 function buildSubmitScoreCallPolicy(): CallPolicy {
   return {
-    target: TEMPO_SCORE_REGISTRY_ADDRESS,
+    target: ABSTRACK_ADDRESS,
     selector: toFunctionSelector("submitScore(uint256,uint256)"),
     maxValuePerUse: 0n,
     valueLimit: LimitUnlimited,
@@ -34,7 +34,7 @@ function buildSubmitScoreCallPolicy(): CallPolicy {
  * Build a full SessionConfig for the given session signer address.
  * The session is scoped exclusively to `submitScore` and expires after 1 hour.
  */
-export function buildTempoSessionConfig(
+export function buildAbstrackSessionConfig(
   signerAddress: `0x${string}`
 ): SessionConfig {
   const expiresAt = BigInt(

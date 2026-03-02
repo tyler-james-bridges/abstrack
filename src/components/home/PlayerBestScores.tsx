@@ -4,8 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { publicClient } from "@/lib/chain/blockData";
 import {
-  TEMPO_SCORE_REGISTRY_ABI,
-  TEMPO_SCORE_REGISTRY_ADDRESS,
+  ABSTRACK_ABI,
+  ABSTRACK_ADDRESS,
 } from "@/lib/chain/scoreContract";
 import { timeAgo, abscanBlockUrl } from "@/lib/format";
 import type { Address } from "viem";
@@ -32,8 +32,8 @@ export function PlayerBestScores() {
     setLoading(true);
     publicClient
       .readContract({
-        address: TEMPO_SCORE_REGISTRY_ADDRESS,
-        abi: TEMPO_SCORE_REGISTRY_ABI,
+        address: ABSTRACK_ADDRESS,
+        abi: ABSTRACK_ABI,
         functionName: "getPlayerScores",
         args: [address as Address],
       })

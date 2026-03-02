@@ -1,33 +1,27 @@
-# Abstract Global Wallet with Next.js
+# Abstrack
 
-This example showcases how to use the Abstract Global Wallet react SDK inside a [Next.js](https://nextjs.org/) application.
+A blockchain rhythm game built on [Abstract](https://abs.xyz/). Every block creates a unique beat — play, score, and compete on-chain.
 
 ## Local Development
 
-1. Get a copy of the `agw-nextjs` example directory from the Abstract Examples repository:
+1. Install dependencies
 
    ```bash
-   mkdir -p agw-nextjs && curl -L https://codeload.github.com/Abstract-Foundation/examples/tar.gz/main | tar -xz --strip=2 -C agw-nextjs examples-main/agw-nextjs && cd agw-nextjs
+   pnpm install
    ```
 
-2. Install dependencies
+2. Run the development server
 
    ```bash
-   npm install
-   ```
-
-3. Run the development server
-
-   ```bash
-   npm run dev
+   pnpm dev
    ```
 
 Visit [http://localhost:3000](http://localhost:3000) to see the app.
 
 ## Useful Links
 
-- [Docs](https://docs.abs.xyz/)
-- [Official Site](https://abs.xyz/)
+- [Abstract Docs](https://docs.abs.xyz/)
+- [Abstract](https://abs.xyz/)
 - [GitHub](https://github.com/Abstract-Foundation)
 - [X](https://x.com/AbstractChain)
 - [Discord](https://discord.com/invite/abstractchain)

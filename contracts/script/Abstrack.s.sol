@@ -2,17 +2,17 @@
 pragma solidity ^0.8.13;
 
 import {Script} from "forge-std/Script.sol";
-import {TempoScoreRegistry} from "../src/TempoScoreRegistry.sol";
+import {Abstrack} from "../src/Abstrack.sol";
 
-contract TempoScoreRegistryScript is Script {
-    TempoScoreRegistry public registry;
+contract AbstrackScript is Script {
+    Abstrack public registry;
 
     function setUp() public {}
 
     function run() public {
         vm.startBroadcast();
 
-        registry = new TempoScoreRegistry();
+        registry = new Abstrack();
 
         vm.stopBroadcast();
     }

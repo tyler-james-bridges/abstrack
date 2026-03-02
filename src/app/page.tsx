@@ -27,7 +27,7 @@ export default function Home() {
                 "0 0 7px #4ecdc4, 0 0 10px #4ecdc4, 0 0 21px #4ecdc4, 0 0 42px rgba(78,205,196,0.3), 0 0 82px rgba(78,205,196,0.1)",
             }}
           >
-            TEMPO
+            ABSTRACK
           </h1>
           <p className="text-xs sm:text-sm text-white/40 font-[family-name:var(--font-avenue-mono)] text-center max-w-sm tracking-wider uppercase">
             Blockchain rhythm &middot; Every block is a unique beat

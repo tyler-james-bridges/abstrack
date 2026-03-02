@@ -9,8 +9,8 @@ import { getGeneralPaymasterInput } from "viem/zksync";
 import type { FinalScore } from "@/lib/game/types";
 import { GRADE_COLORS, MAX_SCORE } from "@/lib/game/constants";
 import {
-  TEMPO_SCORE_REGISTRY_ABI,
-  TEMPO_SCORE_REGISTRY_ADDRESS,
+  ABSTRACK_ABI,
+  ABSTRACK_ADDRESS,
   PAYMASTER_ADDRESS,
 } from "@/lib/chain/scoreContract";
 import { abscanTxUrl } from "@/lib/format";
@@ -164,8 +164,8 @@ export function GameOverScreen({
     try {
       writeContractSponsored(
         {
-          abi: TEMPO_SCORE_REGISTRY_ABI,
-          address: TEMPO_SCORE_REGISTRY_ADDRESS,
+          abi: ABSTRACK_ABI,
+          address: ABSTRACK_ADDRESS,
           functionName: "submitScore",
           args: [
             BigInt(finalScore.blockNumber),

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-/// @title TempoScoreRegistry
-/// @notice On-chain score registry for the TEMPO rhythm game.
+/// @title Abstrack
+/// @notice On-chain score registry for the Abstrack rhythm game.
 ///         Stores per-player, per-block scores and maintains a global top-10 leaderboard.
-contract TempoScoreRegistry {
+contract Abstrack {
     // -------------------------------------------------------------------------
     // Constants
     // -------------------------------------------------------------------------

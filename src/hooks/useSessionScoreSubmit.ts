@@ -8,16 +8,16 @@ import {
 } from "@abstract-foundation/agw-react";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { getGeneralPaymasterInput } from "viem/zksync";
-import { abstractTestnet } from "viem/chains";
+import { abstract } from "viem/chains";
 import type { SessionConfig } from "@abstract-foundation/agw-client/sessions";
 import type { SessionClient } from "@abstract-foundation/agw-client/sessions";
-import { buildTempoSessionConfig, SESSION_PAYMASTER } from "@/lib/chain/sessionSetup";
+import { buildAbstrackSessionConfig, SESSION_PAYMASTER } from "@/lib/chain/sessionSetup";
 import {
-  TEMPO_SCORE_REGISTRY_ABI,
-  TEMPO_SCORE_REGISTRY_ADDRESS,
+  ABSTRACK_ABI,
+  ABSTRACK_ADDRESS,
 } from "@/lib/chain/scoreContract";
 
-const SESSION_STORAGE_KEY = "tempo_session_key";
+const SESSION_STORAGE_KEY = "abstrack_session_key";
 
 interface StoredSession {
   privateKey: `0x${string}`;
@@ -138,7 +138,7 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
     }
 
     const signer = privateKeyToAccount(privateKey);
-    const sessionConfig = buildTempoSessionConfig(signer.address);
+    const sessionConfig = buildAbstrackSessionConfig(signer.address);
 
     // If we don't have a stored session, we need to create one on-chain (this shows a popup)
     if (!stored) {
@@ -174,13 +174,13 @@ export function useSessionScoreSubmit(): UseSessionScoreSubmitReturn {
         setStatus("submitting");
 
         const hash = await client.writeContract({
-          abi: TEMPO_SCORE_REGISTRY_ABI,
-          address: TEMPO_SCORE_REGISTRY_ADDRESS,
+          abi: ABSTRACK_ABI,
+          address: ABSTRACK_ADDRESS,
           functionName: "submitScore",
           args: [blockNumber, score],
           // Session client handles the account internally
           account: client.account,
-          chain: abstractTestnet,
+          chain: abstract,
         });
 
         setTxHash(hash);

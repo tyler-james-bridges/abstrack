@@ -4,17 +4,17 @@
   --background: #0a0a0a;
   --foreground: #ededed;
 
-  /* TEMPO game colors */
-  --tempo-perfect: #ffd700;
-  --tempo-great: #4ecdc4;
-  --tempo-good: #45b7d1;
-  --tempo-miss: #ff6b6b;
+  /* Abstrack game colors */
+  --abstrack-perfect: #ffd700;
+  --abstrack-great: #4ecdc4;
+  --abstrack-good: #45b7d1;
+  --abstrack-miss: #ff6b6b;
 
   /* Lane colors */
-  --tempo-lane-0: #ff6b6b;
-  --tempo-lane-1: #4ecdc4;
-  --tempo-lane-2: #45b7d1;
-  --tempo-lane-3: #f9ca24;
+  --abstrack-lane-0: #ff6b6b;
+  --abstrack-lane-1: #4ecdc4;
+  --abstrack-lane-2: #45b7d1;
+  --abstrack-lane-3: #f9ca24;
 }
 
 @theme inline {
@@ -132,10 +132,10 @@ textarea,
 @keyframes note-glow {
   0%,
   100% {
-    box-shadow: 0 0 8px var(--tempo-great);
+    box-shadow: 0 0 8px var(--abstrack-great);
   }
   50% {
-    box-shadow: 0 0 20px var(--tempo-great);
+    box-shadow: 0 0 20px var(--abstrack-great);
   }
 }
 

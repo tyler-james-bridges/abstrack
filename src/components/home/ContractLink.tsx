@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import { TEMPO_SCORE_REGISTRY_ADDRESS } from "@/lib/chain/scoreContract";
+import { ABSTRACK_ADDRESS } from "@/lib/chain/scoreContract";
 import { abscanAddressUrl } from "@/lib/format";
 
 export function ContractLink() {
   return (
     <a
-      href={abscanAddressUrl(TEMPO_SCORE_REGISTRY_ADDRESS)}
+      href={abscanAddressUrl(ABSTRACK_ADDRESS)}
       target="_blank"
       rel="noopener noreferrer"
       className="inline-flex items-center gap-1.5 text-xs text-white/30 hover:text-[#4ecdc4] active:text-[#4ecdc4] transition-colors group min-h-[44px] px-2"

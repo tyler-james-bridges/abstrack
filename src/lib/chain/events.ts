@@ -1,8 +1,8 @@
 import { parseAbiItem, type Address } from "viem";
 import { publicClient } from "./blockData";
 import {
-  TEMPO_SCORE_REGISTRY_ADDRESS,
-  TEMPO_SCORE_REGISTRY_ABI,
+  ABSTRACK_ADDRESS,
+  ABSTRACK_ABI,
 } from "./scoreContract";
 
 // ---------------------------------------------------------------------------
@@ -45,7 +45,7 @@ export async function getRecentScores(count = 20): Promise<ScoreEvent[]> {
   const fromBlock = latestBlock > 10_000n ? latestBlock - 10_000n : 0n;
 
   const logs = await publicClient.getLogs({
-    address: TEMPO_SCORE_REGISTRY_ADDRESS,
+    address: ABSTRACK_ADDRESS,
     event: SCORE_SUBMITTED_EVENT,
     fromBlock,
     toBlock: latestBlock,
@@ -77,7 +77,7 @@ export async function getPlayerScoreEvents(
   const fromBlock = latestBlock > 10_000n ? latestBlock - 10_000n : 0n;
 
   const logs = await publicClient.getLogs({
-    address: TEMPO_SCORE_REGISTRY_ADDRESS,
+    address: ABSTRACK_ADDRESS,
     event: SCORE_SUBMITTED_EVENT,
     args: {
       player,
@@ -113,7 +113,7 @@ export type ScoreEventCallback = (event: ScoreEvent) => void;
  */
 export function watchScoreSubmitted(onScore: ScoreEventCallback): () => void {
   const unwatch = publicClient.watchEvent({
-    address: TEMPO_SCORE_REGISTRY_ADDRESS,
+    address: ABSTRACK_ADDRESS,
     event: SCORE_SUBMITTED_EVENT,
     pollingInterval: 30_000,
     onLogs: (logs) => {
@@ -150,8 +150,8 @@ export async function getGlobalTopScores(
   count = 10
 ): Promise<OnChainScoreEntry[]> {
   const result = await publicClient.readContract({
-    address: TEMPO_SCORE_REGISTRY_ADDRESS,
-    abi: TEMPO_SCORE_REGISTRY_ABI,
+    address: ABSTRACK_ADDRESS,
+    abi: ABSTRACK_ABI,
     functionName: "getGlobalTopScores",
     args: [BigInt(count)],
   });
@@ -166,8 +166,8 @@ export async function getPlayerScores(
   player: Address
 ): Promise<OnChainScoreEntry[]> {
   const result = await publicClient.readContract({
-    address: TEMPO_SCORE_REGISTRY_ADDRESS,
-    abi: TEMPO_SCORE_REGISTRY_ABI,
+    address: ABSTRACK_ADDRESS,
+    abi: ABSTRACK_ABI,
     functionName: "getPlayerScores",
     args: [player],
   });

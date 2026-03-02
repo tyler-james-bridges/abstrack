@@ -1,5 +1,5 @@
 /**
- * Shared formatting utilities for the TEMPO UI.
+ * Shared formatting utilities for the Abstrack UI.
  */
 
 /**

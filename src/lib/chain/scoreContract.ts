@@ -1,10 +1,10 @@
-export const TEMPO_SCORE_REGISTRY_ADDRESS =
-  "0x7a803c5da3f9009685cfe95d6337a997025679d4" as const;
+export const ABSTRACK_ADDRESS =
+  "0xb42244ed94500318e8cE25b0434fA8973334FC0b" as const;
 
 export const PAYMASTER_ADDRESS =
-  "0x5407B5040dec3D339A9247f3654E59EEccbb6391" as const;
+  "0x9997a706bB267e487458ae85e5A084cDa15C8996" as const;
 
-export const TEMPO_SCORE_REGISTRY_ABI = [
+export const ABSTRACK_ABI = [
   {
     type: "function",
     name: "submitScore",
@@ -25,7 +25,7 @@ export const TEMPO_SCORE_REGISTRY_ABI = [
       {
         name: "entries",
         type: "tuple[]",
-        internalType: "struct TempoScoreRegistry.ScoreEntry[]",
+        internalType: "struct Abstrack.ScoreEntry[]",
         components: [
           { name: "player", type: "address", internalType: "address" },
           { name: "blockNumber", type: "uint256", internalType: "uint256" },
@@ -46,7 +46,7 @@ export const TEMPO_SCORE_REGISTRY_ABI = [
       {
         name: "entries",
         type: "tuple[]",
-        internalType: "struct TempoScoreRegistry.ScoreEntry[]",
+        internalType: "struct Abstrack.ScoreEntry[]",
         components: [
           { name: "player", type: "address", internalType: "address" },
           { name: "blockNumber", type: "uint256", internalType: "uint256" },
@@ -67,7 +67,7 @@ export const TEMPO_SCORE_REGISTRY_ABI = [
       {
         name: "entries",
         type: "tuple[]",
-        internalType: "struct TempoScoreRegistry.ScoreEntry[]",
+        internalType: "struct Abstrack.ScoreEntry[]",
         components: [
           { name: "player", type: "address", internalType: "address" },
           { name: "blockNumber", type: "uint256", internalType: "uint256" },

@@ -101,7 +101,7 @@ export default function PlayPage({ params }: PlayPageProps) {
           await engine.load(generatedChart, containerRef.current ?? undefined);
         };
         // We'll call loadEngine when how-to-play is dismissed
-        (window as unknown as Record<string, () => Promise<void>>).__tempoLoadEngine = loadEngine;
+        (window as unknown as Record<string, () => Promise<void>>).__abstrackLoadEngine = loadEngine;
       } else {
         await engine.load(generatedChart, containerRef.current ?? undefined);
       }
@@ -135,10 +135,10 @@ export default function PlayPage({ params }: PlayPageProps) {
     // If we were waiting, load the engine now
     if (waitingForHowToPlay && engineRef.current && chart) {
       setWaitingForHowToPlay(false);
-      const loadEngine = (window as unknown as Record<string, (() => Promise<void>) | undefined>).__tempoLoadEngine;
+      const loadEngine = (window as unknown as Record<string, (() => Promise<void>) | undefined>).__abstrackLoadEngine;
       if (loadEngine) {
         await loadEngine();
-        delete (window as unknown as Record<string, (() => Promise<void>) | undefined>).__tempoLoadEngine;
+        delete (window as unknown as Record<string, (() => Promise<void>) | undefined>).__abstrackLoadEngine;
       }
     }
   }, [waitingForHowToPlay, chart]);
