@@ -36,35 +36,28 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Auth or Game */}
-        {address ? (
-          <>
-            <DailyChallengeCard />
-            <BlockPicker />
-            <DailyLeaderboard />
-            <RecentBlocks />
-            <PlayerBestScores />
-            <Leaderboard />
-
-            {/* Contract link */}
-            <div className="mt-8 flex flex-col items-center gap-2">
-              <ContractLink />
+        {/* Guest-first gameplay: always playable, wallet only for on-chain identity */}
+        <div className="w-full flex flex-col items-center">
+          {!address && (
+            <div className="flex flex-col items-center gap-3 mt-2 mb-6">
+              <SignInButton />
+              <p className="text-xs text-white/35 max-w-sm text-center font-[family-name:var(--font-avenue-mono)] tracking-wide">
+                Play instantly as guest. Connect wallet only if you want your scores saved on-chain.
+              </p>
             </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center gap-6 mt-4">
-            <SignInButton />
-            <p className="text-xs text-white/30 max-w-xs text-center font-[family-name:var(--font-avenue-mono)] tracking-wide">
-              Connect your Abstract wallet to play and compete on-chain
-            </p>
+          )}
 
-            {/* Show leaderboard even when disconnected */}
-            <Leaderboard />
+          <DailyChallengeCard />
+          <BlockPicker />
+          <DailyLeaderboard />
+          <RecentBlocks />
+          <PlayerBestScores />
+          <Leaderboard />
 
-            {/* Contract link for non-connected users too */}
+          <div className="mt-8 flex flex-col items-center gap-2">
             <ContractLink />
           </div>
-        )}
+        </div>
       </main>
     </div>
   );
