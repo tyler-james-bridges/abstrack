@@ -66,6 +66,18 @@ export function BlockPicker() {
     }
   };
 
+  const handleAgentMode = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const latest = await getLatestBlockNumber();
+      router.push(`/play/${latest}?bot=1&profile=great`);
+    } catch {
+      setLoading(false);
+      setError("Couldn’t launch agent mode. Try again.");
+    }
+  };
+
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="retro-card p-6">
@@ -117,6 +129,14 @@ export function BlockPicker() {
             {loading ? "Loading..." : "Random Block"}
           </button>
         </div>
+
+        <button
+          onClick={handleAgentMode}
+          disabled={loading}
+          className="mt-2 neon-btn w-full h-11 rounded-lg border border-fuchsia-400/30 text-fuchsia-300/80 text-xs hover:bg-fuchsia-400/5 hover:text-fuchsia-200 hover:border-fuchsia-300/40 active:bg-fuchsia-400/10 transition-all disabled:opacity-50 font-[family-name:var(--font-avenue-mono)] tracking-wider uppercase"
+        >
+          {loading ? "Loading..." : "Agent Autoplay (ACK-ready)"}
+        </button>
       </div>
     </div>
   );

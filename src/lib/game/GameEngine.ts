@@ -159,18 +159,23 @@ export class GameEngine {
   }
 
   private handleInput = (input: LaneInput): void => {
-    if (this.phase !== "playing" || !this.chart) return;
     if (input.type !== "press") return;
+    this.pressLane(input.lane);
+  };
+
+  pressLane(lane: LaneInput["lane"]): void {
+    if (this.phase !== "playing" || !this.chart) return;
 
     const gameTime = this.audioEngine.getCurrentTime();
-    const result = this.scoreSystem.judge(gameTime, input.lane, this.chart.notes);
+    const result = this.scoreSystem.judge(gameTime, lane, this.chart.notes);
 
     if (result) {
-      this.audioEngine.playHitSound(input.lane, result.grade);
+      this.audioEngine.playHitSound(lane, result.grade);
       this.emit({ type: "hit", result });
       this.emitScoreUpdate();
     }
-  };
+  }
+
 
   private runGameLoop = (): void => {
     if (this.phase !== "playing" || !this.chart) return;

@@ -2,10 +2,11 @@
 
 import React, { useEffect, useRef, useState, useCallback, use } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { GameEngine } from "@/lib/game/GameEngine";
 import type { GameEvent } from "@/lib/game/GameEngine";
 import type { BeatChart, FinalScore, GamePhase, GameState } from "@/lib/game/types";
+import { BotController, type BotProfile } from "@/lib/game/BotController";
 import { getBlockForGame } from "@/lib/chain/blockData";
 import { generateBeatChart } from "@/lib/game/BlockBeatGenerator";
 import { GameCanvas } from "@/components/game/GameCanvas";
@@ -23,8 +24,10 @@ export default function PlayPage({ params }: PlayPageProps) {
   const { blockNumber: blockNumberStr } = use(params);
   const blockNumber = BigInt(blockNumberStr);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const engineRef = useRef<GameEngine | null>(null);
+  const botRef = useRef<BotController | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [phase, setPhase] = useState<GamePhase>("loading");
@@ -47,6 +50,13 @@ export default function PlayPage({ params }: PlayPageProps) {
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const [waitingForHowToPlay, setWaitingForHowToPlay] = useState(false);
+
+  const botEnabled = searchParams.get("bot") === "1";
+  const botProfileParam = searchParams.get("profile") as BotProfile | null;
+  const botProfile: BotProfile =
+    botProfileParam && ["perfect", "great", "good", "chaos"].includes(botProfileParam)
+      ? botProfileParam
+      : "great";
 
   // Check if first visit and show how-to-play
   useEffect(() => {
@@ -71,10 +81,25 @@ export default function PlayPage({ params }: PlayPageProps) {
       const engine = new GameEngine();
       engineRef.current = engine;
 
+      if (botEnabled) {
+        botRef.current = new BotController({
+          profile: botProfile,
+          chart: generatedChart,
+          getCurrentTime: () => engine.getCurrentTime(),
+          onPress: (lane) => engine.pressLane(lane),
+        });
+      }
+
       const unsubscribe = engine.on((event: GameEvent) => {
         switch (event.type) {
           case "phaseChange":
             setPhase(event.phase);
+            if (event.phase === "playing") {
+              botRef.current?.start();
+            }
+            if (event.phase === "finished") {
+              botRef.current?.stop();
+            }
             break;
           case "scoreUpdate":
             setGameState(event.state);
@@ -108,12 +133,14 @@ export default function PlayPage({ params }: PlayPageProps) {
 
       return () => {
         unsubscribe();
+        botRef.current?.stop();
+        botRef.current = null;
         engine.destroy();
       };
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load game");
     }
-  }, [blockNumber]);
+  }, [blockNumber, botEnabled, botProfile]);
 
   useEffect(() => {
     let cleanup: (() => void) | undefined;
@@ -124,6 +151,8 @@ export default function PlayPage({ params }: PlayPageProps) {
 
     return () => {
       cleanup?.();
+      botRef.current?.stop();
+      botRef.current = null;
       engineRef.current?.destroy();
     };
   }, [startGame]);
@@ -144,6 +173,8 @@ export default function PlayPage({ params }: PlayPageProps) {
   }, [waitingForHowToPlay, chart]);
 
   const handlePlayAgain = useCallback(() => {
+    botRef.current?.stop();
+    botRef.current = null;
     engineRef.current?.destroy();
     engineRef.current = null;
     setChart(null);
@@ -170,6 +201,8 @@ export default function PlayPage({ params }: PlayPageProps) {
   }, []);
 
   const handleQuit = useCallback(() => {
+    botRef.current?.stop();
+    botRef.current = null;
     engineRef.current?.destroy();
     engineRef.current = null;
     router.push("/");
@@ -261,6 +294,16 @@ export default function PlayPage({ params }: PlayPageProps) {
         >
           &larr; Back
         </Link>
+      )}
+
+      {botEnabled && phase !== "finished" && (
+        <div
+          className="absolute right-3 z-20 px-3 py-1 rounded-full border border-[#4ecdc4]/30 text-[#4ecdc4] text-[10px] uppercase tracking-widest font-[family-name:var(--font-avenue-mono)] bg-black/60"
+          style={{ top: "calc(env(safe-area-inset-top, 0px) + 10px)" }}
+          data-game-ui
+        >
+          Agent Mode · {botProfile}
+        </div>
       )}
 
       {/* Countdown overlay */}
