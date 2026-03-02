@@ -17,6 +17,23 @@ export function DailyLeaderboard() {
   const [rows, setRows] = useState<ScoreEntry[]>([]);
   const [block, setBlock] = useState<bigint | null>(null);
 
+  const shareDaily = async () => {
+    if (!block || rows.length === 0) return;
+    const top = rows[0];
+    const text = `ABSTRACK daily challenge #${block.toString()} — top score ${Number(top.score).toLocaleString()} by ${truncateAddress(top.player)}. Can you beat it?`;
+    const url = typeof window !== "undefined" ? window.location.origin : "https://abstrack.live";
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ text, url });
+      } else {
+        await navigator.clipboard.writeText(`${text} ${url}`);
+      }
+    } catch {
+      // no-op
+    }
+  };
+
   useEffect(() => {
     (async () => {
       try {
@@ -44,9 +61,18 @@ export function DailyLeaderboard() {
   return (
     <div className="w-full max-w-md mx-auto mt-6">
       <div className="retro-card p-6">
-        <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-fuchsia-300/70 retro-header">
-          Daily Leaderboard {block ? `#${block}` : ""}
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xs font-bold font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-fuchsia-300/70 retro-header">
+            Daily Leaderboard {block ? `#${block}` : ""}
+          </h2>
+          <button
+            onClick={shareDaily}
+            disabled={!block || rows.length === 0}
+            className="text-[10px] uppercase tracking-wider text-fuchsia-200/70 hover:text-fuchsia-100 disabled:opacity-40"
+          >
+            Share
+          </button>
+        </div>
         {rows.length === 0 ? (
           <p className="text-sm text-white/30">No daily scores yet. Be first.</p>
         ) : (
