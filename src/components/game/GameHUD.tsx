@@ -86,32 +86,32 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
         />
       </div>
 
-      {/* Score — top right, Avenue Mono with glow */}
+      {/* Score card */}
       <div
-        className="absolute right-3 sm:right-4 text-right"
+        className="absolute right-3 sm:right-4 text-right rounded-xl border border-[#73C98C]/20 bg-black/55 px-3 py-2 backdrop-blur-sm"
         style={{
-          top: "calc(env(safe-area-inset-top, 0px) + 12px)",
+          top: "calc(env(safe-area-inset-top, 0px) + 10px)",
+          boxShadow: "0 0 16px rgba(62,185,95,0.10)",
         }}
       >
         <p
           className="text-lg sm:text-3xl font-bold text-white font-[family-name:var(--font-avenue-mono)] tabular-nums leading-tight"
           style={{
-            textShadow: "0 0 10px rgba(182,255,0,0.3)",
-            animation: "score-glow 2s ease-in-out infinite",
+            textShadow: "0 0 8px rgba(62,185,95,0.22)",
           }}
         >
           {score.toLocaleString()}
         </p>
         {chart && (
-          <p className="text-[10px] sm:text-xs text-white/40 mt-0.5 font-[family-name:var(--font-avenue-mono)] tracking-wider">
-            {chart.bpm} BPM | #{chart.blockNumber}
+          <p className="text-[10px] sm:text-xs text-white/45 mt-0.5 font-[family-name:var(--font-avenue-mono)] tracking-wider">
+            {chart.bpm} BPM · #{chart.blockNumber}
           </p>
         )}
       </div>
 
-      {/* Combo — positioned above hit zone */}
+      {/* Combo badge */}
       {combo > 1 && (
-        <div className="absolute top-[30%] sm:top-1/3 left-1/2 -translate-x-1/2 text-center">
+        <div className="absolute top-[28%] sm:top-[30%] left-1/2 -translate-x-1/2 text-center rounded-2xl border border-white/10 bg-black/45 px-4 py-2 backdrop-blur-sm">
           <p
             className="text-2xl sm:text-5xl font-black text-white/90 tabular-nums leading-none font-[family-name:var(--font-avenue-mono)]"
             style={{

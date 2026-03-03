@@ -40,7 +40,7 @@ export function PauseOverlay({ onResume, onQuit }: PauseOverlayProps) {
       {/* CRT scanlines */}
       <div className="absolute inset-0 crt-scanlines" />
 
-      <div className="flex flex-col items-center gap-6 sm:gap-8 px-6 w-full max-w-xs relative z-10">
+      <div className="retro-card flex flex-col items-center gap-6 sm:gap-8 px-6 py-7 w-full max-w-xs relative z-10 border border-[#73C98C]/25">
         {/* Pause icon with neon glow */}
         <div className="flex items-center gap-3">
           <div

@@ -15,6 +15,7 @@ import { GameLoadingScreen } from "@/components/game/GameLoadingScreen";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
 import { PauseOverlay } from "@/components/game/PauseOverlay";
 import { HowToPlayOverlay, hasSeenHowToPlay, markHowToPlaySeen } from "@/components/game/HowToPlayOverlay";
+import { BackgroundEffects } from "@/components/ui/BackgroundEffects";
 
 interface PlayPageProps {
   params: Promise<{ blockNumber: string }>;
@@ -225,6 +226,8 @@ export default function PlayPage({ params }: PlayPageProps) {
       className={`relative w-full h-dvh bg-black overflow-hidden select-none ${isShaking ? "animate-screen-shake" : ""}`}
       style={{ touchAction: "none" }}
     >
+      <BackgroundEffects />
+
       {/* Error state */}
       {error && (
         <div className="absolute inset-0 z-40 flex flex-col items-center justify-center text-white gap-4 px-6 safe-all">

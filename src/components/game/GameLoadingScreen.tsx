@@ -13,7 +13,7 @@ export function GameLoadingScreen({ blockNumber, status }: GameLoadingScreenProp
       {/* CRT scanline overlay */}
       <div className="absolute inset-0 crt-scanlines z-10" />
 
-      <div className="flex flex-col items-center gap-5 sm:gap-6 relative z-20">
+      <div className="retro-card flex flex-col items-center gap-5 sm:gap-6 relative z-20 px-8 py-8 border border-[#73C98C]/25">
         {/* Animated Abstrack logo with neon glow */}
         <div className="relative">
           {/* Outer glow ring */}
