@@ -6,7 +6,6 @@ import {
   LANE_COUNT,
   LANE_COLORS,
   LANE_LABELS,
-  NOTE_SPEED,
   HIT_ZONE_Y,
   GRADE_COLORS,
   getCanvasPadding,
@@ -182,7 +181,7 @@ export function GameCanvas({ chart, getCurrentTime, isPlaying }: GameCanvasProps
       // Notes
       for (const note of chart.notes) {
         const timeDiff = note.time - currentTime;
-        const y = hitY - timeDiff * NOTE_SPEED;
+        const y = hitY - timeDiff * note.noteSpeed;
         if (y < topY - baseNoteSize || y > height + baseNoteSize) continue;
 
         if (note.hit) {

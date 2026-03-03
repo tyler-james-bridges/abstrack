@@ -17,6 +17,8 @@ export interface Note {
   grade?: TimingGrade;
   /** performance.now() timestamp when the note was judged (for hit animations) */
   hitTime?: number;
+  /** Scroll speed in px/s (varies with progressive difficulty) */
+  noteSpeed: number;
 }
 
 export type ArpPattern = "ascending" | "descending" | "pendulum" | "random";

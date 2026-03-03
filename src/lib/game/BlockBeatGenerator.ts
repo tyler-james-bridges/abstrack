@@ -13,6 +13,7 @@ import {
   ARP_PATTERNS,
 } from "./constants";
 import { bjorklund, rotate, createPRNG } from "./rhythm";
+import { getDifficulty } from "./difficulty";
 
 /**
  * Extract a 32-bit seed from block hash.
@@ -88,8 +89,11 @@ export function generateBeatChart(block: BlockData): BeatChart {
   for (let measure = 0; measure < MEASURES; measure++) {
     const measureOffset = measure * subsPerMeasure;
 
-    // Total hits this measure (slight PRNG variation)
-    const hits = globalMin + Math.floor(rand() * (globalMax - globalMin + 1));
+    const diff = getDifficulty(measure, MEASURES);
+
+    // Total hits this measure — density ramps with difficulty
+    const densityRange = globalMax - globalMin;
+    const hits = globalMin + Math.round(diff.densityT * densityRange);
 
     // One Euclidean pattern for the whole measure
     const pattern = bjorklund(hits, subsPerMeasure);
@@ -105,10 +109,10 @@ export function generateBeatChart(block: BlockData): BeatChart {
       const globalStep = measureOffset + step;
       const time = globalStep * subdivisionDuration;
 
-      // Assign to a lane: lead lane gets ~40% of hits, rest weighted
+      // Assign to a lane: lead lane bias decreases with difficulty
       let lane: number;
       const roll = rand();
-      if (roll < 0.4) {
+      if (roll < diff.leadLaneBias) {
         lane = leadLane;
       } else {
         // Weighted pick from remaining lanes
@@ -127,10 +131,11 @@ export function generateBeatChart(block: BlockData): BeatChart {
         time,
         duration: 0,
         hit: false,
+        noteSpeed: diff.noteSpeed,
       });
 
-      // Occasional 2-note chord at higher density (max 15% chance)
-      if (hits >= 6 && rand() < 0.15) {
+      // Chord chance increases with difficulty
+      if (rand() < diff.chordChance) {
         const chordLane = ((lane + 1 + Math.floor(rand() * 3)) % LANE_COUNT) as Lane;
         if (chordLane !== lane) {
           notes.push({
@@ -139,6 +144,7 @@ export function generateBeatChart(block: BlockData): BeatChart {
             time,
             duration: 0,
             hit: false,
+            noteSpeed: diff.noteSpeed,
           });
         }
       }
