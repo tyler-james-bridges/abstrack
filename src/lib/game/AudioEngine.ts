@@ -16,14 +16,22 @@ const TEMPO_MIN = 0.7;
 const TEMPO_MAX = 1.5;
 
 export class AudioEngine {
+  // Transport-scheduled synths (backing track + auto-play notes)
   private membraneSynth: Tone.MembraneSynth | null = null;
   private noiseSynth: Tone.NoiseSynth | null = null;
   private fmSynth: Tone.FMSynth | null = null;
   private hihatSynth: Tone.MetalSynth | null = null;
   private bassSynth: Tone.MonoSynth | null = null;
   private padSynth: Tone.PolySynth | null = null;
-  private sparkleSynth: Tone.FMSynth | null = null;
-  private missSynth: Tone.NoiseSynth | null = null;
+
+  // Dedicated synths for real-time interactive feedback (hit/miss/countdown).
+  // Separate instances prevent timing conflicts with transport-scheduled events.
+  private hitMembraneSynth: Tone.MembraneSynth | null = null;
+  private hitNoiseSynth: Tone.NoiseSynth | null = null;
+  private hitFmSynth: Tone.FMSynth | null = null;
+  private hitHihatSynth: Tone.MetalSynth | null = null;
+  private hitSparkleSynth: Tone.FMSynth | null = null;
+  private hitMissSynth: Tone.NoiseSynth | null = null;
   private isInitialized = false;
   private scheduledEvents: number[] = [];
   private musicMode: MusicMode = "musical";
@@ -118,36 +126,47 @@ export class AudioEngine {
       volume: -24,
     }).toDestination();
 
-    // Sparkle synth for perfect hits
-    this.sparkleSynth = new Tone.FMSynth({
-      harmonicity: 8,
-      modulationIndex: 2,
+    // Interactive hit synths (duplicates for real-time feedback)
+    this.hitMembraneSynth = new Tone.MembraneSynth({
+      pitchDecay: 0.05, octaves: 6,
       oscillator: { type: "sine" },
-      envelope: {
-        attack: 0.001,
-        decay: 0.08,
-        sustain: 0,
-        release: 0.05,
-      },
+      envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4 },
+      volume: -8,
+    }).toDestination();
+
+    this.hitNoiseSynth = new Tone.NoiseSynth({
+      noise: { type: "white" },
+      envelope: { attack: 0.001, decay: 0.15, sustain: 0, release: 0.05 },
+      volume: -12,
+    }).toDestination();
+
+    this.hitHihatSynth = new Tone.MetalSynth({
+      envelope: { attack: 0.001, decay: 0.05, release: 0.01 },
+      harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5,
+      volume: -18,
+    }).toDestination();
+
+    this.hitFmSynth = new Tone.FMSynth({
+      harmonicity: 3, modulationIndex: 10,
+      oscillator: { type: "sine" },
+      envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.5 },
+      modulation: { type: "square" },
+      modulationEnvelope: { attack: 0.5, decay: 0, sustain: 1, release: 0.5 },
+      volume: -14,
+    }).toDestination();
+
+    this.hitSparkleSynth = new Tone.FMSynth({
+      harmonicity: 8, modulationIndex: 2,
+      oscillator: { type: "sine" },
+      envelope: { attack: 0.001, decay: 0.08, sustain: 0, release: 0.05 },
       modulation: { type: "sine" },
-      modulationEnvelope: {
-        attack: 0.001,
-        decay: 0.05,
-        sustain: 0,
-        release: 0.05,
-      },
+      modulationEnvelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 },
       volume: -20,
     }).toDestination();
 
-    // Miss buzz sound
-    this.missSynth = new Tone.NoiseSynth({
+    this.hitMissSynth = new Tone.NoiseSynth({
       noise: { type: "brown" },
-      envelope: {
-        attack: 0.001,
-        decay: 0.06,
-        sustain: 0,
-        release: 0.03,
-      },
+      envelope: { attack: 0.001, decay: 0.06, sustain: 0, release: 0.03 },
       volume: -24,
     }).toDestination();
 
@@ -266,44 +285,45 @@ export class AudioEngine {
 
   /** Play a hit sound for feedback with quality based on timing grade */
   playHitSound(lane: number, grade: TimingGrade = "perfect"): void {
+    const now = Tone.now();
     const volOffset = GRADE_VOLUME_OFFSET[grade];
 
     switch (lane) {
       case 0:
-        if (this.membraneSynth) {
-          this.membraneSynth.volume.value = -8 + volOffset;
-          this.membraneSynth.triggerAttackRelease("C1", "16n", this.nextSafeTime("membrane", Tone.now()));
+        if (this.hitMembraneSynth) {
+          this.hitMembraneSynth.volume.value = -8 + volOffset;
+          this.hitMembraneSynth.triggerAttackRelease("C1", "16n", now);
         }
         break;
       case 1:
-        if (this.noiseSynth) {
-          this.noiseSynth.volume.value = -12 + volOffset;
-          this.noiseSynth.triggerAttackRelease("16n", this.nextSafeTime("noise", Tone.now()));
+        if (this.hitNoiseSynth) {
+          this.hitNoiseSynth.volume.value = -12 + volOffset;
+          this.hitNoiseSynth.triggerAttackRelease("16n", now);
         }
         break;
       case 2:
-        if (this.hihatSynth) {
-          this.hihatSynth.volume.value = -18 + volOffset;
-          this.hihatSynth.triggerAttackRelease("32n", this.nextSafeTime("hihat", Tone.now()));
+        if (this.hitHihatSynth) {
+          this.hitHihatSynth.volume.value = -18 + volOffset;
+          this.hitHihatSynth.triggerAttackRelease("32n", now);
         }
         break;
       case 3:
-        if (this.fmSynth) {
-          this.fmSynth.volume.value = -14 + volOffset;
-          this.fmSynth.triggerAttackRelease("C5", "16n", this.nextSafeTime("fm", Tone.now()));
+        if (this.hitFmSynth) {
+          this.hitFmSynth.volume.value = -14 + volOffset;
+          this.hitFmSynth.triggerAttackRelease("C5", "16n", now);
         }
         break;
     }
 
     // Sparkle overlay on perfect hits
     if (grade === "perfect") {
-      this.sparkleSynth?.triggerAttackRelease("C6", "32n", this.nextSafeTime("sparkle", Tone.now()));
+      this.hitSparkleSynth?.triggerAttackRelease("C6", "32n", now);
     }
   }
 
   /** Play a short error buzz on miss */
   playMissSound(): void {
-    this.missSynth?.triggerAttackRelease("32n", this.nextSafeTime("miss", Tone.now()));
+    this.hitMissSynth?.triggerAttackRelease("32n", Tone.now());
   }
 
   start(): void {
@@ -343,11 +363,11 @@ export class AudioEngine {
 
   /** Play a countdown tick sound */
   playCountdownTick(isFinal: boolean): void {
+    const now = Tone.now();
     if (isFinal) {
-      // Higher pitch for "GO"
-      this.fmSynth?.triggerAttackRelease("C5", "8n", this.nextSafeTime("fm", Tone.now()));
+      this.hitFmSynth?.triggerAttackRelease("C5", "8n", now);
     } else {
-      this.membraneSynth?.triggerAttackRelease("G2", "16n", this.nextSafeTime("membrane", Tone.now()));
+      this.hitMembraneSynth?.triggerAttackRelease("G2", "16n", now);
     }
   }
 
@@ -384,16 +404,24 @@ export class AudioEngine {
     this.fmSynth?.dispose();
     this.bassSynth?.dispose();
     this.padSynth?.dispose();
-    this.sparkleSynth?.dispose();
-    this.missSynth?.dispose();
+    this.hitMembraneSynth?.dispose();
+    this.hitNoiseSynth?.dispose();
+    this.hitHihatSynth?.dispose();
+    this.hitFmSynth?.dispose();
+    this.hitSparkleSynth?.dispose();
+    this.hitMissSynth?.dispose();
     this.membraneSynth = null;
     this.noiseSynth = null;
     this.hihatSynth = null;
     this.fmSynth = null;
     this.bassSynth = null;
     this.padSynth = null;
-    this.sparkleSynth = null;
-    this.missSynth = null;
+    this.hitMembraneSynth = null;
+    this.hitNoiseSynth = null;
+    this.hitHihatSynth = null;
+    this.hitFmSynth = null;
+    this.hitSparkleSynth = null;
+    this.hitMissSynth = null;
     this.isInitialized = false;
   }
 }
