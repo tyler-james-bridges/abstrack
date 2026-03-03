@@ -1,4 +1,4 @@
-import type { BeatChart, Note, Lane } from "./types";
+import type { BeatChart, Note, Lane, ArpPattern } from "./types";
 import type { BlockData } from "../chain/blockData";
 import {
   MIN_BPM,
@@ -9,27 +9,15 @@ import {
   LANE_COUNT,
   SCALES,
   SCALE_NAMES,
+  CHORD_PROGRESSIONS,
+  ARP_PATTERNS,
 } from "./constants";
-
-/**
- * Simple seeded PRNG (mulberry32).
- * Deterministic: same seed always produces the same sequence.
- */
-function createPRNG(seed: number): () => number {
-  let state = seed | 0;
-  return () => {
-    state = (state + 0x6d2b79f5) | 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+import { bjorklund, rotate, createPRNG } from "./rhythm";
 
 /**
  * Extract a 32-bit seed from block hash.
  */
 function hashToSeed(hash: string): number {
-  // Use first 8 hex chars (4 bytes) of hash after '0x'
   const hex = hash.slice(2, 10);
   return parseInt(hex, 16);
 }
@@ -38,8 +26,6 @@ function hashToSeed(hash: string): number {
  * Map gasUsed to BPM. Higher gas = faster tempo.
  */
 function gasUsedToBPM(gasUsed: bigint): number {
-  // Abstract gas ranges roughly 21000 to ~30M per block
-  // Normalize to 0-1 range using log scale for better distribution
   const gasNum = Number(gasUsed);
   const logGas = Math.log10(Math.max(gasNum, 1));
   const logMin = Math.log10(21000);
@@ -49,17 +35,24 @@ function gasUsedToBPM(gasUsed: bigint): number {
 }
 
 /**
- * Map tx count to note density (0.1 to 0.8).
- * More transactions = more notes per subdivision slot.
+ * Map tx count to total hits per measure for Euclidean rhythms.
+ * Returns [minHits, maxHits] for a 16-slot measure — this is the TOTAL
+ * across all lanes, not per-lane.
  */
-function txCountToDensity(txCount: number): number {
-  // 0 txs = sparse, 100+ txs = dense
+function txCountToHitRange(txCount: number): [number, number] {
   const normalized = Math.min(txCount / 100, 1);
-  return 0.1 + normalized * 0.7;
+  const minHits = Math.round(3 + normalized * 2); // 3-5
+  const maxHits = Math.round(5 + normalized * 3); // 5-8
+  return [minHits, maxHits];
 }
 
+// Lane weights — higher = more likely to receive a hit.
+// Kick and snare anchor the groove; hihat fills; melodic adds color.
+const LANE_WEIGHTS = [3, 2, 3, 2]; // kick, snare, hihat, melodic
+const LANE_WEIGHT_SUM = LANE_WEIGHTS.reduce((a, b) => a + b, 0);
+
 /**
- * Generate a deterministic beat chart from block data.
+ * Generate a deterministic beat chart from block data using Euclidean rhythms.
  * Same block will always produce the same chart.
  */
 export function generateBeatChart(block: BlockData): BeatChart {
@@ -67,7 +60,8 @@ export function generateBeatChart(block: BlockData): BeatChart {
   const rand = createPRNG(seed);
 
   const bpm = gasUsedToBPM(block.gasUsed);
-  const density = txCountToDensity(block.transactions.length);
+  const txCount = block.transactions.length;
+  const [globalMin, globalMax] = txCountToHitRange(txCount);
 
   // Pick scale from hash bytes
   const scaleIndex = parseInt(block.hash.slice(10, 12), 16) % SCALE_NAMES.length;
@@ -76,49 +70,77 @@ export function generateBeatChart(block: BlockData): BeatChart {
 
   const secondsPerBeat = 60 / bpm;
   const subdivisionDuration = secondsPerBeat / SUBDIVISIONS;
-  const totalSubdivisions = MEASURES * BEATS_PER_MEASURE * SUBDIVISIONS;
+  const subsPerMeasure = BEATS_PER_MEASURE * SUBDIVISIONS; // 16
   const duration = MEASURES * BEATS_PER_MEASURE * secondsPerBeat;
+
+  // Extract rotation offsets from hash bytes
+  const hashBytes = block.hash.slice(2);
+  const rotationBytes = [
+    parseInt(hashBytes.slice(12, 14), 16),
+    parseInt(hashBytes.slice(14, 16), 16),
+    parseInt(hashBytes.slice(16, 18), 16),
+    parseInt(hashBytes.slice(18, 20), 16),
+  ];
 
   const notes: Note[] = [];
   let noteId = 0;
 
-  // Generate rhythm pattern using hash bytes for variation
-  const hashBytes = block.hash.slice(2);
+  for (let measure = 0; measure < MEASURES; measure++) {
+    const measureOffset = measure * subsPerMeasure;
 
-  for (let i = 0; i < totalSubdivisions; i++) {
-    // Decide if this subdivision gets a note
-    const shouldPlace = rand() < density;
-    if (!shouldPlace) continue;
+    // Total hits this measure (slight PRNG variation)
+    const hits = globalMin + Math.floor(rand() * (globalMax - globalMin + 1));
 
-    // Determine lane distribution from hash
-    const byteIndex = (i * 2) % (hashBytes.length - 2);
-    const hashByte = parseInt(hashBytes.slice(byteIndex, byteIndex + 2), 16);
+    // One Euclidean pattern for the whole measure
+    const pattern = bjorklund(hits, subsPerMeasure);
+    const rotation = (rotationBytes[measure % rotationBytes.length] + measure) % subsPerMeasure;
+    const rotated = rotate(pattern, rotation);
 
-    // Primary lane from hash byte
-    const lane = (hashByte % LANE_COUNT) as Lane;
+    // Pick a "lead" lane that gets priority this measure (rotates with hash)
+    const leadLane = (rotationBytes[0] + measure) % LANE_COUNT;
 
-    // Time for this note
-    const time = i * subdivisionDuration;
+    for (let step = 0; step < subsPerMeasure; step++) {
+      if (!rotated[step]) continue;
 
-    notes.push({
-      id: noteId++,
-      lane,
-      time,
-      duration: 0,
-      hit: false,
-    });
+      const globalStep = measureOffset + step;
+      const time = globalStep * subdivisionDuration;
 
-    // Occasionally add chords (two simultaneous notes) for higher density
-    if (density > 0.4 && rand() < 0.15) {
-      const secondLane = ((lane + 1 + Math.floor(rand() * 3)) % LANE_COUNT) as Lane;
-      if (secondLane !== lane) {
-        notes.push({
-          id: noteId++,
-          lane: secondLane,
-          time,
-          duration: 0,
-          hit: false,
-        });
+      // Assign to a lane: lead lane gets ~40% of hits, rest weighted
+      let lane: number;
+      const roll = rand();
+      if (roll < 0.4) {
+        lane = leadLane;
+      } else {
+        // Weighted pick from remaining lanes
+        const r = rand() * LANE_WEIGHT_SUM;
+        let acc = 0;
+        lane = 0;
+        for (let l = 0; l < LANE_COUNT; l++) {
+          acc += LANE_WEIGHTS[l];
+          if (r < acc) { lane = l; break; }
+        }
+      }
+
+      notes.push({
+        id: noteId++,
+        lane: lane as Lane,
+        time,
+        duration: 0,
+        hit: false,
+      });
+
+      // Occasional 2-note chord at higher density (max 15% chance)
+      if (hits >= 6 && rand() < 0.15) {
+        const chordLane = ((lane + 1 + Math.floor(rand() * 3)) % LANE_COUNT) as Lane;
+        if (chordLane !== lane) {
+          notes.push({
+            id: noteId++,
+            lane: chordLane,
+            time,
+            duration: 0,
+            hit: false,
+          });
+        }
       }
     }
   }
@@ -126,8 +148,18 @@ export function generateBeatChart(block: BlockData): BeatChart {
   // Sort notes by time, then by lane
   notes.sort((a, b) => a.time - b.time || a.lane - b.lane);
 
-  const txCount = block.transactions.length;
   const gasNorm = Math.min(Number(block.gasUsed) / 20_000_000, 1);
+
+  // Pick chord progression deterministically
+  const scaleProgs = CHORD_PROGRESSIONS[scaleName] ?? CHORD_PROGRESSIONS["minor"];
+  const progIndex = Math.floor(rand() * scaleProgs.length);
+  const chordProgression = scaleProgs[progIndex];
+
+  // Chords change every 2 or 4 measures based on energy
+  const chordsPerMeasure = gasNorm > 0.5 ? 2 : 4;
+
+  // Arp pattern from PRNG
+  const arpPattern = ARP_PATTERNS[Math.floor(rand() * ARP_PATTERNS.length)] as ArpPattern;
 
   return {
     blockNumber: Number(block.number),
@@ -139,9 +171,12 @@ export function generateBeatChart(block: BlockData): BeatChart {
     measures: MEASURES,
     song: {
       energy: 0.35 + gasNorm * 0.65,
-      swing: ((seed >>> 8) & 0xff) / 255 * 0.08,
+      swing: (((seed >>> 8) & 0xff) / 255) * 0.08,
       bassDensity: Math.min(0.25 + txCount / 220, 0.9),
       arpDensity: Math.min(0.2 + txCount / 260, 0.85),
+      chordProgression,
+      chordsPerMeasure,
+      arpPattern,
     },
   };
 }

@@ -19,11 +19,19 @@ export interface Note {
   hitTime?: number;
 }
 
+export type ArpPattern = "ascending" | "descending" | "pendulum" | "random";
+
 export interface SongParams {
   energy: number;
   swing: number;
   bassDensity: number;
   arpDensity: number;
+  /** Scale degrees for chord progression (e.g. [0, 5, 3, 4] for i-vi-iv-v) */
+  chordProgression: number[];
+  /** How many measures per chord change */
+  chordsPerMeasure: number;
+  /** Arpeggio note-ordering pattern */
+  arpPattern: ArpPattern;
 }
 
 export interface BeatChart {

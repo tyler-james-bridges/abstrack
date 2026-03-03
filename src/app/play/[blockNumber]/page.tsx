@@ -31,6 +31,7 @@ export default function PlayPage({ params }: PlayPageProps) {
   const engineRef = useRef<GameEngine | null>(null);
   const botRef = useRef<BotController | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const epochRef = useRef(0);
 
   const [phase, setPhase] = useState<GamePhase>("loading");
   const [chart, setChart] = useState<BeatChart | null>(null);
@@ -68,12 +69,22 @@ export default function PlayPage({ params }: PlayPageProps) {
   }, []);
 
   const startGame = useCallback(async () => {
+    // Tear down any previous game (handles React strict mode double-mount)
+    botRef.current?.stop();
+    botRef.current = null;
+    engineRef.current?.destroy();
+    engineRef.current = null;
+
+    const epoch = ++epochRef.current;
+
     try {
       setPhase("loading");
       setFinalScore(null);
       setLoadingStatus("Fetching block data...");
 
       const blockData = await getBlockForGame(blockNumber);
+      // Bail if a newer startGame call has taken over
+      if (epochRef.current !== epoch) return;
       setLoadingStatus("Generating beat chart...");
 
       const generatedChart = generateBeatChart(blockData);
@@ -92,7 +103,11 @@ export default function PlayPage({ params }: PlayPageProps) {
         });
       }
 
-      const unsubscribe = engine.on((event: GameEvent) => {
+      // Subscribe to engine events (cleanup handled by engine.destroy())
+      engine.on((event: GameEvent) => {
+        // Ignore events from stale engines
+        if (epochRef.current !== epoch) return;
+
         switch (event.type) {
           case "phaseChange":
             setPhase(event.phase);
@@ -125,37 +140,29 @@ export default function PlayPage({ params }: PlayPageProps) {
         setWaitingForHowToPlay(true);
         // Store the engine load for later
         const loadEngine = async () => {
+          if (epochRef.current !== epoch) return;
           await engine.load(generatedChart, containerRef.current ?? undefined);
         };
         // We'll call loadEngine when how-to-play is dismissed
         (window as unknown as Record<string, () => Promise<void>>).__abstrackLoadEngine = loadEngine;
       } else {
+        if (epochRef.current !== epoch) return;
         await engine.load(generatedChart, containerRef.current ?? undefined);
       }
-
-      return () => {
-        unsubscribe();
-        botRef.current?.stop();
-        botRef.current = null;
-        engine.destroy();
-      };
     } catch (err) {
+      if (epochRef.current !== epoch) return;
       setError(err instanceof Error ? err.message : "Failed to load game");
     }
   }, [blockNumber, botEnabled, botProfile]);
 
   useEffect(() => {
-    let cleanup: (() => void) | undefined;
-
-    startGame().then((c) => {
-      cleanup = c;
-    });
+    startGame();
 
     return () => {
-      cleanup?.();
       botRef.current?.stop();
       botRef.current = null;
       engineRef.current?.destroy();
+      engineRef.current = null;
     };
   }, [startGame]);
 

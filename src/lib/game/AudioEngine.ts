@@ -1,6 +1,8 @@
 import * as Tone from "tone";
 import type { BeatChart } from "./types";
 import type { TimingGrade } from "./types";
+import { BEATS_PER_MEASURE, SUBDIVISIONS } from "./constants";
+import { bjorklund, rotate, createPRNG } from "./rhythm";
 
 // Volume offsets per grade (dB relative to normal)
 const GRADE_VOLUME_OFFSET: Record<TimingGrade, number> = {
@@ -14,6 +16,37 @@ export type MusicMode = "classic" | "musical";
 
 const TEMPO_MIN = 0.7;
 const TEMPO_MAX = 1.5;
+
+/**
+ * Build a note sequence for the arpeggiator based on the pattern type.
+ */
+function buildArpSequence(
+  chordTones: string[],
+  pattern: string,
+  rand: () => number
+): string[] {
+  switch (pattern) {
+    case "ascending":
+      return chordTones;
+    case "descending":
+      return [...chordTones].reverse();
+    case "pendulum":
+      // up then down (minus duplicate at peak): [0,1,2,1]
+      if (chordTones.length <= 1) return chordTones;
+      return [...chordTones, ...chordTones.slice(1, -1).reverse()];
+    case "random": {
+      // Shuffle chord tones deterministically
+      const shuffled = [...chordTones];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(rand() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+    default:
+      return chordTones;
+  }
+}
 
 export class AudioEngine {
   // Transport-scheduled synths (backing track + auto-play notes)
@@ -32,6 +65,13 @@ export class AudioEngine {
   private hitHihatSynth: Tone.MetalSynth | null = null;
   private hitSparkleSynth: Tone.FMSynth | null = null;
   private hitMissSynth: Tone.NoiseSynth | null = null;
+
+  // Effects
+  private compressor: Tone.Compressor | null = null;
+  private reverb: Tone.Reverb | null = null;
+  private dryChannel: Tone.Channel | null = null;
+  private wetChannel: Tone.Channel | null = null;
+
   private isInitialized = false;
   private scheduledEvents: number[] = [];
   private musicMode: MusicMode = "musical";
@@ -44,7 +84,29 @@ export class AudioEngine {
 
     await Tone.start();
 
-    // Kick drum
+    // --- Effects chain ---
+    // Master compressor
+    this.compressor = new Tone.Compressor({
+      threshold: -18,
+      ratio: 3,
+      attack: 0.01,
+      release: 0.15,
+    }).toDestination();
+
+    // Reverb send
+    this.reverb = new Tone.Reverb({ decay: 2.5, wet: 0.35 });
+    await this.reverb.generate();
+    this.reverb.connect(this.compressor);
+
+    // Dry channel (drums, bass) → compressor
+    this.dryChannel = new Tone.Channel({ volume: 0 }).connect(this.compressor);
+
+    // Wet channel (pad, arp) → reverb → compressor
+    this.wetChannel = new Tone.Channel({ volume: 0 }).connect(this.reverb);
+
+    // --- Transport-scheduled synths ---
+
+    // Kick drum (dry)
     this.membraneSynth = new Tone.MembraneSynth({
       pitchDecay: 0.05,
       octaves: 6,
@@ -56,9 +118,9 @@ export class AudioEngine {
         release: 1.4,
       },
       volume: -8,
-    }).toDestination();
+    }).connect(this.dryChannel);
 
-    // Snare
+    // Snare (dry)
     this.noiseSynth = new Tone.NoiseSynth({
       noise: { type: "white" },
       envelope: {
@@ -68,9 +130,9 @@ export class AudioEngine {
         release: 0.05,
       },
       volume: -12,
-    }).toDestination();
+    }).connect(this.dryChannel);
 
-    // Hi-hat
+    // Hi-hat (dry)
     this.hihatSynth = new Tone.MetalSynth({
       envelope: {
         attack: 0.001,
@@ -82,9 +144,9 @@ export class AudioEngine {
       resonance: 4000,
       octaves: 1.5,
       volume: -18,
-    }).toDestination();
+    }).connect(this.dryChannel);
 
-    // Melodic synth
+    // Melodic / arp synth (wet)
     this.fmSynth = new Tone.FMSynth({
       harmonicity: 3,
       modulationIndex: 10,
@@ -103,10 +165,11 @@ export class AudioEngine {
         release: 0.5,
       },
       volume: -14,
-    }).toDestination();
+    }).connect(this.wetChannel);
 
+    // Bass: sine oscillator for cleaner sub (dry)
     this.bassSynth = new Tone.MonoSynth({
-      oscillator: { type: "square" },
+      oscillator: { type: "sine" },
       filter: { Q: 1.4, type: "lowpass", rolloff: -24 },
       envelope: { attack: 0.005, decay: 0.22, sustain: 0.35, release: 0.4 },
       filterEnvelope: {
@@ -114,19 +177,20 @@ export class AudioEngine {
         decay: 0.2,
         sustain: 0.4,
         release: 0.6,
-        baseFrequency: 80,
+        baseFrequency: 60,
         octaves: 2,
       },
       volume: -18,
-    }).toDestination();
+    }).connect(this.dryChannel);
 
+    // Pad: sine oscillator, slower attack, longer release (wet)
     this.padSynth = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: "triangle" },
-      envelope: { attack: 0.08, decay: 0.3, sustain: 0.35, release: 1.0 },
-      volume: -24,
-    }).toDestination();
+      oscillator: { type: "sine" },
+      envelope: { attack: 0.3, decay: 0.4, sustain: 0.4, release: 2.0 },
+      volume: -18,
+    }).connect(this.wetChannel);
 
-    // Interactive hit synths (duplicates for real-time feedback)
+    // --- Interactive hit synths (go straight to destination for lowest latency) ---
     this.hitMembraneSynth = new Tone.MembraneSynth({
       pitchDecay: 0.05, octaves: 6,
       oscillator: { type: "sine" },
@@ -180,10 +244,18 @@ export class AudioEngine {
     this.chartBaseBpm = chart.bpm;
     Tone.getTransport().bpm.value = this.chartBaseBpm * this.tempoMultiplier;
 
+    const secondsPerBeat = 60 / chart.bpm;
+    const subdivisionDur = secondsPerBeat / SUBDIVISIONS;
+
     for (const note of chart.notes) {
+      // Fix swing: apply to off-beat 16th positions (1, 3, 5, 7, ...) not odd note IDs
+      const subdivisionIndex = Math.round(note.time / subdivisionDur);
+      const isOffBeat = subdivisionIndex % 2 === 1;
+      const swingOffset = isOffBeat ? chart.song.swing : 0;
+
       const eventId = Tone.getTransport().schedule((time) => {
         this.playNoteSound(note.lane, chart.scale, time, note.id);
-      }, note.time / this.tempoMultiplier + (chart.song.swing * ((note.id % 2) ? 1 : 0)));
+      }, note.time / this.tempoMultiplier + swingOffset);
       this.scheduledEvents.push(eventId);
     }
 
@@ -199,47 +271,111 @@ export class AudioEngine {
 
   private scheduleBackingTrack(chart: BeatChart): void {
     const beatDur = 60 / (chart.bpm * this.tempoMultiplier);
-    const root = chart.scale[0] ?? "C3";
-    const fifth = chart.scale[Math.min(4, chart.scale.length - 1)] ?? root;
-    const upper = chart.scale[Math.min(2, chart.scale.length - 1)] ?? root;
+    const subsPerMeasure = BEATS_PER_MEASURE * SUBDIVISIONS; // 16
+    const subdivisionDur = beatDur / SUBDIVISIONS;
+    const measureDur = BEATS_PER_MEASURE * beatDur;
+    const scale = chart.scale;
+    const song = chart.song;
 
-    let seed = parseInt(chart.blockHash.slice(2, 10), 16) || 1;
-    const rand = () => {
-      seed = (seed * 1664525 + 1013904223) >>> 0;
-      return seed / 0x100000000;
+    const seed = parseInt(chart.blockHash.slice(2, 10), 16) || 1;
+    const rand = createPRNG(seed + 0xdead); // offset seed so backing differs from notes
+
+    // --- Chord progression ---
+    const prog = song.chordProgression;
+    const chordsPerMeasure = song.chordsPerMeasure;
+
+    /** Get the chord tones for a given measure index */
+    const getChordTones = (measure: number): string[] => {
+      const chordIndex = Math.floor(measure / chordsPerMeasure) % prog.length;
+      const root = prog[chordIndex];
+      // Build triad from scale: root, third (root+2), fifth (root+4)
+      const r = scale[root % scale.length];
+      const third = scale[(root + 2) % scale.length];
+      const fifth = scale[(root + 4) % scale.length];
+      return [r, third, fifth];
     };
 
-    const bassStep = chart.song.bassDensity > 0.65 ? 0.5 : 1;
-    for (let t = 0; t < chart.duration; t += bassStep * beatDur) {
-      const id = Tone.getTransport().schedule((time) => {
-        if (rand() <= chart.song.bassDensity) {
-          this.bassSynth?.triggerAttackRelease(root.replace(/\d+$/, "2"), "8n", this.nextSafeTime("bass", time));
-        }
-      }, t);
-      this.scheduledEvents.push(id);
-    }
-
+    // --- Pad: play chord tones, change every chordsPerMeasure measures ---
     for (let m = 0; m < chart.measures; m++) {
-      const t = m * 4 * beatDur;
+      // Only re-trigger pad at chord change boundaries
+      if (m % chordsPerMeasure !== 0) continue;
+
+      const t = m * measureDur;
+      const chordTones = getChordTones(m);
+      const holdDur = chordsPerMeasure * measureDur;
+
       const id = Tone.getTransport().schedule((time) => {
-        this.padSynth?.triggerAttackRelease([
-          root.replace(/\d+$/, "4"),
-          upper.replace(/\d+$/, "4"),
-          fifth.replace(/\d+$/, "4"),
-        ], "2m", this.nextSafeTime("pad", time), 0.35 + chart.song.energy * 0.2);
+        const padNotes = chordTones.map((n) => n.replace(/\d+$/, "4"));
+        this.padSynth?.triggerAttackRelease(
+          padNotes,
+          holdDur * 0.9,
+          this.nextSafeTime("pad", time),
+          0.35 + song.energy * 0.2
+        );
       }, t);
       this.scheduledEvents.push(id);
     }
 
-    const arpStep = chart.song.arpDensity > 0.6 ? 0.25 : 0.5;
-    for (let t = 0; t < chart.duration; t += arpStep * beatDur) {
-      const id = Tone.getTransport().schedule((time) => {
-        if (rand() <= chart.song.arpDensity) {
-          const n = chart.scale[Math.floor(rand() * chart.scale.length)] ?? root;
-          this.fmSynth?.triggerAttackRelease(n.replace(/\d+$/, "5"), "16n", this.nextSafeTime("fm", time), 0.25 + chart.song.energy * 0.15);
-        }
-      }, t);
-      this.scheduledEvents.push(id);
+    // --- Bass: Euclidean pattern following chord root, root-fifth alternation ---
+    const bassHits = Math.max(2, Math.round(song.bassDensity * 6)); // 2-6 hits per measure
+    for (let m = 0; m < chart.measures; m++) {
+      const pattern = bjorklund(bassHits, subsPerMeasure);
+      const bassRotation = Math.floor(rand() * subsPerMeasure);
+      const rotated = rotate(pattern, bassRotation);
+      const chordTones = getChordTones(m);
+      const bassRoot = chordTones[0].replace(/\d+$/, "2");
+      const bassFifth = chordTones[2].replace(/\d+$/, "2");
+
+      let bassNoteCount = 0;
+      for (let step = 0; step < subsPerMeasure; step++) {
+        if (!rotated[step]) continue;
+
+        const t = m * measureDur + step * subdivisionDur;
+        // Alternate root and fifth
+        const note = bassNoteCount % 2 === 0 ? bassRoot : bassFifth;
+        bassNoteCount++;
+
+        const id = Tone.getTransport().schedule((time) => {
+          this.bassSynth?.triggerAttackRelease(
+            note,
+            "8n",
+            this.nextSafeTime("bass", time)
+          );
+        }, t);
+        this.scheduledEvents.push(id);
+      }
+    }
+
+    // --- Arp: Euclidean rhythm, sequence through chord tones ---
+    const arpHits = Math.max(3, Math.round(song.arpDensity * 8)); // 3-8 hits per measure
+    for (let m = 0; m < chart.measures; m++) {
+      const pattern = bjorklund(arpHits, subsPerMeasure);
+      const arpRotation = Math.floor(rand() * subsPerMeasure);
+      const rotated = rotate(pattern, arpRotation);
+      const chordTones = getChordTones(m);
+
+      // Build note sequence based on arp pattern
+      const arpSequence = buildArpSequence(chordTones, song.arpPattern, rand);
+
+      let arpNoteCount = 0;
+      for (let step = 0; step < subsPerMeasure; step++) {
+        if (!rotated[step]) continue;
+
+        const t = m * measureDur + step * subdivisionDur;
+        const noteStr =
+          arpSequence[arpNoteCount % arpSequence.length].replace(/\d+$/, "5");
+        arpNoteCount++;
+
+        const id = Tone.getTransport().schedule((time) => {
+          this.fmSynth?.triggerAttackRelease(
+            noteStr,
+            "16n",
+            this.nextSafeTime("fm", time),
+            0.25 + song.energy * 0.15
+          );
+        }, t);
+        this.scheduledEvents.push(id);
+      }
     }
   }
 
@@ -374,7 +510,6 @@ export class AudioEngine {
   /** Set the master volume (in dB, -60 to 0) */
   setVolume(db: number): void {
     Tone.getDestination().volume.value = db;
-    // Keep backing textures a bit quieter than hit cues.
     if (this.padSynth) this.padSynth.volume.value = Math.min(-18, db - 24);
     if (this.bassSynth) this.bassSynth.volume.value = Math.min(-12, db - 16);
   }
@@ -410,6 +545,10 @@ export class AudioEngine {
     this.hitFmSynth?.dispose();
     this.hitSparkleSynth?.dispose();
     this.hitMissSynth?.dispose();
+    this.compressor?.dispose();
+    this.reverb?.dispose();
+    this.dryChannel?.dispose();
+    this.wetChannel?.dispose();
     this.membraneSynth = null;
     this.noiseSynth = null;
     this.hihatSynth = null;
@@ -422,6 +561,10 @@ export class AudioEngine {
     this.hitFmSynth = null;
     this.hitSparkleSynth = null;
     this.hitMissSynth = null;
+    this.compressor = null;
+    this.reverb = null;
+    this.dryChannel = null;
+    this.wetChannel = null;
     this.isInitialized = false;
   }
 }

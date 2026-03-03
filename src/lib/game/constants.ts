@@ -115,3 +115,35 @@ export const SCALE_NAMES = Object.keys(SCALES);
 // Synth types for notes
 export const SYNTH_TYPES = ["kick", "snare", "hihat", "melodic"] as const;
 export type SynthType = (typeof SYNTH_TYPES)[number];
+
+// Chord progressions per scale type (scale-degree indices)
+export const CHORD_PROGRESSIONS: Record<string, number[][]> = {
+  major: [
+    [0, 3, 4, 0], // I-IV-V-I
+    [0, 5, 3, 4], // I-vi-IV-V
+  ],
+  minor: [
+    [0, 5, 3, 4], // i-vi-iv-v
+    [0, 3, 4, 0], // i-iv-v-i
+  ],
+  pentatonic: [
+    [0, 2, 3, 0], // I-III-IV-I (pentatonic degrees)
+    [0, 3, 4, 2], // I-IV-V-III
+  ],
+  blues: [
+    [0, 3, 4, 0], // I-IV-V-I (standard 12-bar feel)
+    [0, 0, 3, 4], // I-I-IV-V
+  ],
+  dorian: [
+    [0, 3, 4, 0], // i-iv-v-i
+    [0, 5, 3, 4], // i-vi-iv-v
+  ],
+};
+
+// Arpeggio pattern types
+export const ARP_PATTERNS = [
+  "ascending",
+  "descending",
+  "pendulum",
+  "random",
+] as const;
