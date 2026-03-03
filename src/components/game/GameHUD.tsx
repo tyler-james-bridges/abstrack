@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import type { GameState } from "@/lib/game/types";
+import type { MusicMode } from "@/lib/game/AudioEngine";
 
 const VOLUME_STORAGE_KEY = "abstrack-volume";
 
@@ -24,20 +25,39 @@ function getStoredVolume(): number {
 interface GameHUDProps {
   state: GameState;
   onVolumeChange?: (db: number) => void;
+  onMusicModeChange?: (mode: MusicMode) => void;
+  onTempoChange?: (multiplier: number) => void;
 }
 
-export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
+const MUSIC_MODE_STORAGE_KEY = "abstrack-music-mode";
+const TEMPO_STORAGE_KEY = "abstrack-tempo-multiplier";
+
+export function GameHUD({ state, onVolumeChange, onMusicModeChange, onTempoChange }: GameHUDProps) {
   const { score, combo, chart, elapsedTime } = state;
   const progress = chart ? Math.min(elapsedTime / chart.duration, 1) : 0;
 
   const [volume, setVolume] = useState<number>(70);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [musicMode, setMusicMode] = useState<MusicMode>("musical");
+  const [tempoMultiplier, setTempoMultiplier] = useState<number>(1);
 
   useEffect(() => {
     const stored = getStoredVolume();
     setVolume(stored);
     onVolumeChange?.(sliderToDb(stored));
-  }, [onVolumeChange]);
+
+    if (typeof window !== "undefined") {
+      const storedMode = localStorage.getItem(MUSIC_MODE_STORAGE_KEY);
+      const mode: MusicMode = storedMode === "classic" ? "classic" : "musical";
+      setMusicMode(mode);
+      onMusicModeChange?.(mode);
+
+      const storedTempo = Number(localStorage.getItem(TEMPO_STORAGE_KEY) ?? "1");
+      const clamped = Math.max(0.7, Math.min(1.5, Number.isFinite(storedTempo) ? storedTempo : 1));
+      setTempoMultiplier(clamped);
+      onTempoChange?.(clamped);
+    }
+  }, [onVolumeChange, onMusicModeChange, onTempoChange]);
 
   const handleVolumeChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,6 +68,24 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
     },
     [onVolumeChange]
   );
+
+  const toggleMusicMode = () => {
+    const next: MusicMode = musicMode === "musical" ? "classic" : "musical";
+    setMusicMode(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(MUSIC_MODE_STORAGE_KEY, next);
+    }
+    onMusicModeChange?.(next);
+  };
+
+  const updateTempo = (next: number) => {
+    const clamped = Math.max(0.7, Math.min(1.5, Number(next.toFixed(2))));
+    setTempoMultiplier(clamped);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(TEMPO_STORAGE_KEY, String(clamped));
+    }
+    onTempoChange?.(clamped);
+  };
 
   const volumeIcon =
     volume === 0 ? (
@@ -104,7 +142,7 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
         </p>
         {chart && (
           <p className="text-[10px] sm:text-xs text-white/45 mt-0.5 font-[family-name:var(--font-avenue-mono)] tracking-wider">
-            {chart.bpm} BPM · #{chart.blockNumber}
+            {Math.round(chart.bpm * tempoMultiplier)} BPM · #{chart.blockNumber}
           </p>
         )}
       </div>
@@ -156,6 +194,33 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
         }}
       >
         <div className="flex items-center gap-1">
+          <button
+            onClick={toggleMusicMode}
+            className="flex items-center justify-center h-9 px-2 rounded-md border border-[#73C98C]/20 bg-black/45 text-[10px] tracking-wider text-[#A0E7AB]/85 hover:bg-black/65"
+            aria-label="Toggle music mode"
+            title={`Music mode: ${musicMode}`}
+          >
+            {musicMode === "musical" ? "MUS" : "CLS"}
+          </button>
+          <div className="flex items-center gap-1 rounded-md border border-[#73C98C]/20 bg-black/45 px-1 h-9">
+            <button
+              onClick={() => updateTempo(tempoMultiplier - 0.05)}
+              className="w-6 h-6 text-[#A0E7AB]/85 hover:text-white"
+              aria-label="Tempo down"
+            >
+              -
+            </button>
+            <span className="text-[10px] text-[#A0E7AB]/85 min-w-[44px] text-center font-[family-name:var(--font-avenue-mono)]">
+              {Math.round((state.chart?.bpm ?? 0) * tempoMultiplier)}
+            </span>
+            <button
+              onClick={() => updateTempo(tempoMultiplier + 0.05)}
+              className="w-6 h-6 text-[#A0E7AB]/85 hover:text-white"
+              aria-label="Tempo up"
+            >
+              +
+            </button>
+          </div>
           <button
             onClick={() => setShowVolumeSlider((v) => !v)}
             className="flex items-center justify-center w-11 h-11 text-white/40 hover:text-[#3EB95F] active:text-[#3EB95F] transition-colors rounded-lg"

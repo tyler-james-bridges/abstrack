@@ -6,7 +6,7 @@ import type {
   LaneInput,
   HitResult,
 } from "./types";
-import { AudioEngine } from "./AudioEngine";
+import { AudioEngine, type MusicMode } from "./AudioEngine";
 import { InputHandler } from "./InputHandler";
 import { ScoreSystem } from "./ScoreSystem";
 import { COUNTDOWN_DURATION } from "./constants";
@@ -258,6 +258,14 @@ export class GameEngine {
   /** Set master volume in dB (-60 to 0) */
   setVolume(db: number): void {
     this.audioEngine.setVolume(db);
+  }
+
+  setMusicMode(mode: MusicMode): void {
+    this.audioEngine.setMusicMode(mode);
+  }
+
+  setTempoMultiplier(multiplier: number): void {
+    this.audioEngine.setTempoMultiplier(multiplier);
   }
 
   destroy(): void {

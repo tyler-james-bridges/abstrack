@@ -19,7 +19,8 @@ function timeLeftToUtcMidnight(): string {
 export function DailyChallengeCard() {
   const router = useRouter();
   const [blockNumber, setBlockNumber] = useState<bigint | null>(null);
-  const [timeLeft, setTimeLeft] = useState<string>(timeLeftToUtcMidnight());
+  const [mounted, setMounted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<string>("--:--:--");
 
   useEffect(() => {
     getLatestBlockNumber()
@@ -28,6 +29,8 @@ export function DailyChallengeCard() {
   }, []);
 
   useEffect(() => {
+    setMounted(true);
+    setTimeLeft(timeLeftToUtcMidnight());
     const id = window.setInterval(() => setTimeLeft(timeLeftToUtcMidnight()), 1000);
     return () => window.clearInterval(id);
   }, []);
@@ -39,8 +42,8 @@ export function DailyChallengeCard() {
           <p className="text-[10px] uppercase tracking-[0.2em] text-[#3EB95F]/70 font-[family-name:var(--font-avenue-mono)]">
             Daily Beat Challenge · {getTodayChallengeSeed()}
           </p>
-          <span className="text-[10px] text-white/45 font-[family-name:var(--font-avenue-mono)]">
-            resets in {timeLeft}
+          <span className="text-[10px] text-white/45 font-[family-name:var(--font-avenue-mono)]" suppressHydrationWarning>
+            resets in {mounted ? timeLeft : "--:--:--"}
           </span>
         </div>
         <p className="text-sm text-white/80 mb-3 font-[family-name:var(--font-roobert)]">

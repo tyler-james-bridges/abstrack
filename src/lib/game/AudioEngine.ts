@@ -10,6 +10,11 @@ const GRADE_VOLUME_OFFSET: Record<TimingGrade, number> = {
   miss: 0,
 };
 
+export type MusicMode = "classic" | "musical";
+
+const TEMPO_MIN = 0.7;
+const TEMPO_MAX = 1.5;
+
 export class AudioEngine {
   private membraneSynth: Tone.MembraneSynth | null = null;
   private noiseSynth: Tone.NoiseSynth | null = null;
@@ -21,6 +26,10 @@ export class AudioEngine {
   private missSynth: Tone.NoiseSynth | null = null;
   private isInitialized = false;
   private scheduledEvents: number[] = [];
+  private musicMode: MusicMode = "musical";
+  private tempoMultiplier = 1;
+  private chartBaseBpm = 120;
+  private lastScheduledTrigger: Record<string, number> = {};
 
   async init(): Promise<void> {
     if (this.isInitialized) return;
@@ -147,26 +156,30 @@ export class AudioEngine {
 
   scheduleChart(chart: BeatChart): void {
     this.clearSchedule();
+    this.lastScheduledTrigger = {};
 
-    Tone.getTransport().bpm.value = chart.bpm;
+    this.chartBaseBpm = chart.bpm;
+    Tone.getTransport().bpm.value = this.chartBaseBpm * this.tempoMultiplier;
 
     for (const note of chart.notes) {
       const eventId = Tone.getTransport().schedule((time) => {
-        this.playNoteSound(note.lane, chart.scale, time);
-      }, note.time + (chart.song.swing * ((note.id % 2) ? 1 : 0)));
+        this.playNoteSound(note.lane, chart.scale, time, note.id);
+      }, note.time / this.tempoMultiplier + (chart.song.swing * ((note.id % 2) ? 1 : 0)));
       this.scheduledEvents.push(eventId);
     }
 
-    this.scheduleBackingTrack(chart);
+    if (this.musicMode === "musical") {
+      this.scheduleBackingTrack(chart);
+    }
 
     // Schedule end
     Tone.getTransport().schedule(() => {
       this.stop();
-    }, chart.duration + 0.5);
+    }, chart.duration / this.tempoMultiplier + 0.5);
   }
 
   private scheduleBackingTrack(chart: BeatChart): void {
-    const beatDur = 60 / chart.bpm;
+    const beatDur = 60 / (chart.bpm * this.tempoMultiplier);
     const root = chart.scale[0] ?? "C3";
     const fifth = chart.scale[Math.min(4, chart.scale.length - 1)] ?? root;
     const upper = chart.scale[Math.min(2, chart.scale.length - 1)] ?? root;
@@ -211,27 +224,42 @@ export class AudioEngine {
     }
   }
 
+  private nextSafeTime(key: string, time: number): number {
+    const prev = this.lastScheduledTrigger[key];
+    if (prev == null || time > prev) {
+      this.lastScheduledTrigger[key] = time;
+      return time;
+    }
+    const bumped = prev + 0.0005;
+    this.lastScheduledTrigger[key] = bumped;
+    return bumped;
+  }
+
   private playNoteSound(
     lane: number,
     scale: string[],
-    time: number
+    time: number,
+    noteId = 0
   ): void {
+    const t = this.nextSafeTime(`lane-${lane}`, time);
+
     switch (lane) {
       case 0: // Kick
-        this.membraneSynth?.triggerAttackRelease("C1", "8n", time);
+        this.membraneSynth?.triggerAttackRelease("C1", "8n", t);
         break;
       case 1: // Snare
-        this.noiseSynth?.triggerAttackRelease("8n", time);
+        this.noiseSynth?.triggerAttackRelease("8n", t);
         break;
       case 2: // Hi-hat
-        this.hihatSynth?.triggerAttackRelease("32n", time);
+        this.hihatSynth?.triggerAttackRelease("32n", t);
         break;
       case 3: // Melodic
-        const noteIndex = Math.floor(Math.random() * scale.length);
+        const noteIndex = noteId % Math.max(1, scale.length);
         this.fmSynth?.triggerAttackRelease(
           scale[noteIndex],
           "16n",
-          time
+          t,
+          this.musicMode === "musical" ? 0.16 : 0.28
         );
         break;
     }
@@ -297,6 +325,23 @@ export class AudioEngine {
     Tone.getTransport().start();
   }
 
+  setMusicMode(mode: MusicMode): void {
+    this.musicMode = mode;
+  }
+
+  getMusicMode(): MusicMode {
+    return this.musicMode;
+  }
+
+  setTempoMultiplier(multiplier: number): void {
+    this.tempoMultiplier = Math.max(TEMPO_MIN, Math.min(TEMPO_MAX, multiplier));
+    Tone.getTransport().bpm.value = this.chartBaseBpm * this.tempoMultiplier;
+  }
+
+  getTempoMultiplier(): number {
+    return this.tempoMultiplier;
+  }
+
   /** Play a countdown tick sound */
   playCountdownTick(isFinal: boolean): void {
     const now = Tone.now();
@@ -322,7 +367,7 @@ export class AudioEngine {
   }
 
   getCurrentTime(): number {
-    return Tone.getTransport().seconds;
+    return Tone.getTransport().seconds * this.tempoMultiplier;
   }
 
   private clearSchedule(): void {

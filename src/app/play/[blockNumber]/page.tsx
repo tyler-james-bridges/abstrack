@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback, use } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GameEngine } from "@/lib/game/GameEngine";
+import type { MusicMode } from "@/lib/game/AudioEngine";
 import type { GameEvent } from "@/lib/game/GameEngine";
 import type { BeatChart, FinalScore, GamePhase, GameState } from "@/lib/game/types";
 import { BotController, type BotProfile } from "@/lib/game/BotController";
@@ -213,6 +214,14 @@ export default function PlayPage({ params }: PlayPageProps) {
     engineRef.current?.setVolume(db);
   }, []);
 
+  const handleMusicModeChange = useCallback((mode: MusicMode) => {
+    engineRef.current?.setMusicMode(mode);
+  }, []);
+
+  const handleTempoChange = useCallback((multiplier: number) => {
+    engineRef.current?.setTempoMultiplier(multiplier);
+  }, []);
+
   const getCurrentTime = useCallback(() => {
     return engineRef.current?.getCurrentTime() ?? 0;
   }, []);
@@ -279,7 +288,7 @@ export default function PlayPage({ params }: PlayPageProps) {
           />
           {/* CRT scanline overlay on game canvas */}
           <div className="absolute inset-0 crt-scanlines z-[5]" />
-          <GameHUD state={gameState} onVolumeChange={handleVolumeChange} />
+          <GameHUD state={gameState} onVolumeChange={handleVolumeChange} onMusicModeChange={handleMusicModeChange} onTempoChange={handleTempoChange} />
         </>
       )}
 
