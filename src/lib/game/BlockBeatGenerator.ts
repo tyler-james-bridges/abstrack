@@ -126,6 +126,9 @@ export function generateBeatChart(block: BlockData): BeatChart {
   // Sort notes by time, then by lane
   notes.sort((a, b) => a.time - b.time || a.lane - b.lane);
 
+  const txCount = block.transactions.length;
+  const gasNorm = Math.min(Number(block.gasUsed) / 20_000_000, 1);
+
   return {
     blockNumber: Number(block.number),
     blockHash: block.hash,
@@ -134,5 +137,11 @@ export function generateBeatChart(block: BlockData): BeatChart {
     notes,
     scale,
     measures: MEASURES,
+    song: {
+      energy: 0.35 + gasNorm * 0.65,
+      swing: ((seed >>> 8) & 0xff) / 255 * 0.08,
+      bassDensity: Math.min(0.25 + txCount / 220, 0.9),
+      arpDensity: Math.min(0.2 + txCount / 260, 0.85),
+    },
   };
 }

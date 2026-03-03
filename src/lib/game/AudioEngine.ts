@@ -15,6 +15,8 @@ export class AudioEngine {
   private noiseSynth: Tone.NoiseSynth | null = null;
   private fmSynth: Tone.FMSynth | null = null;
   private hihatSynth: Tone.MetalSynth | null = null;
+  private bassSynth: Tone.MonoSynth | null = null;
+  private padSynth: Tone.PolySynth | null = null;
   private sparkleSynth: Tone.FMSynth | null = null;
   private missSynth: Tone.NoiseSynth | null = null;
   private isInitialized = false;
@@ -86,6 +88,27 @@ export class AudioEngine {
       volume: -14,
     }).toDestination();
 
+    this.bassSynth = new Tone.MonoSynth({
+      oscillator: { type: "square" },
+      filter: { Q: 1.4, type: "lowpass", rolloff: -24 },
+      envelope: { attack: 0.005, decay: 0.22, sustain: 0.35, release: 0.4 },
+      filterEnvelope: {
+        attack: 0.01,
+        decay: 0.2,
+        sustain: 0.4,
+        release: 0.6,
+        baseFrequency: 80,
+        octaves: 2,
+      },
+      volume: -18,
+    }).toDestination();
+
+    this.padSynth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: "triangle" },
+      envelope: { attack: 0.08, decay: 0.3, sustain: 0.35, release: 1.0 },
+      volume: -24,
+    }).toDestination();
+
     // Sparkle synth for perfect hits
     this.sparkleSynth = new Tone.FMSynth({
       harmonicity: 8,
@@ -130,14 +153,62 @@ export class AudioEngine {
     for (const note of chart.notes) {
       const eventId = Tone.getTransport().schedule((time) => {
         this.playNoteSound(note.lane, chart.scale, time);
-      }, note.time);
+      }, note.time + (chart.song.swing * ((note.id % 2) ? 1 : 0)));
       this.scheduledEvents.push(eventId);
     }
+
+    this.scheduleBackingTrack(chart);
 
     // Schedule end
     Tone.getTransport().schedule(() => {
       this.stop();
     }, chart.duration + 0.5);
+  }
+
+  private scheduleBackingTrack(chart: BeatChart): void {
+    const beatDur = 60 / chart.bpm;
+    const root = chart.scale[0] ?? "C3";
+    const fifth = chart.scale[Math.min(4, chart.scale.length - 1)] ?? root;
+    const upper = chart.scale[Math.min(2, chart.scale.length - 1)] ?? root;
+
+    let seed = parseInt(chart.blockHash.slice(2, 10), 16) || 1;
+    const rand = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 0x100000000;
+    };
+
+    const bassStep = chart.song.bassDensity > 0.65 ? 0.5 : 1;
+    for (let t = 0; t < chart.duration; t += bassStep * beatDur) {
+      const id = Tone.getTransport().schedule((time) => {
+        if (rand() <= chart.song.bassDensity) {
+          this.bassSynth?.triggerAttackRelease(root.replace(/\d+$/, "2"), "8n", time);
+        }
+      }, t);
+      this.scheduledEvents.push(id);
+    }
+
+    for (let m = 0; m < chart.measures; m++) {
+      const t = m * 4 * beatDur;
+      const id = Tone.getTransport().schedule((time) => {
+        this.padSynth?.triggerAttackRelease([
+          root.replace(/\d+$/, "4"),
+          upper.replace(/\d+$/, "4"),
+          fifth.replace(/\d+$/, "4"),
+        ], "2m", time, 0.35 + chart.song.energy * 0.2);
+      }, t);
+      this.scheduledEvents.push(id);
+    }
+
+    const arpStep = chart.song.arpDensity > 0.6 ? 0.25 : 0.5;
+    for (let t = 0; t < chart.duration; t += arpStep * beatDur) {
+      const id = Tone.getTransport().schedule((time) => {
+        if (rand() <= chart.song.arpDensity) {
+          const n = chart.scale[Math.floor(rand() * chart.scale.length)] ?? root;
+          this.fmSynth?.triggerAttackRelease(n.replace(/\d+$/, "5"), "16n", time, 0.25 + chart.song.energy * 0.15);
+        }
+      }, t);
+      this.scheduledEvents.push(id);
+    }
   }
 
   private playNoteSound(
@@ -240,6 +311,9 @@ export class AudioEngine {
   /** Set the master volume (in dB, -60 to 0) */
   setVolume(db: number): void {
     Tone.getDestination().volume.value = db;
+    // Keep backing textures a bit quieter than hit cues.
+    if (this.padSynth) this.padSynth.volume.value = Math.min(-18, db - 24);
+    if (this.bassSynth) this.bassSynth.volume.value = Math.min(-12, db - 16);
   }
 
   /** Get the current master volume in dB */
@@ -265,12 +339,16 @@ export class AudioEngine {
     this.noiseSynth?.dispose();
     this.hihatSynth?.dispose();
     this.fmSynth?.dispose();
+    this.bassSynth?.dispose();
+    this.padSynth?.dispose();
     this.sparkleSynth?.dispose();
     this.missSynth?.dispose();
     this.membraneSynth = null;
     this.noiseSynth = null;
     this.hihatSynth = null;
     this.fmSynth = null;
+    this.bassSynth = null;
+    this.padSynth = null;
     this.sparkleSynth = null;
     this.missSynth = null;
     this.isInitialized = false;

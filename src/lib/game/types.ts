@@ -19,6 +19,13 @@ export interface Note {
   hitTime?: number;
 }
 
+export interface SongParams {
+  energy: number;
+  swing: number;
+  bassDensity: number;
+  arpDensity: number;
+}
+
 export interface BeatChart {
   blockNumber: number;
   blockHash: string;
@@ -30,6 +37,8 @@ export interface BeatChart {
   scale: string[];
   /** Number of measures */
   measures: number;
+  /** Derived song shaping params from on-chain activity */
+  song: SongParams;
 }
 
 export interface HitResult {
