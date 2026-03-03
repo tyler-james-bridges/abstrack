@@ -194,7 +194,7 @@ export class AudioEngine {
     for (let t = 0; t < chart.duration; t += bassStep * beatDur) {
       const id = Tone.getTransport().schedule((time) => {
         if (rand() <= chart.song.bassDensity) {
-          this.bassSynth?.triggerAttackRelease(root.replace(/\d+$/, "2"), "8n", time);
+          this.bassSynth?.triggerAttackRelease(root.replace(/\d+$/, "2"), "8n", this.nextSafeTime("bass", time));
         }
       }, t);
       this.scheduledEvents.push(id);
@@ -207,7 +207,7 @@ export class AudioEngine {
           root.replace(/\d+$/, "4"),
           upper.replace(/\d+$/, "4"),
           fifth.replace(/\d+$/, "4"),
-        ], "2m", time, 0.35 + chart.song.energy * 0.2);
+        ], "2m", this.nextSafeTime("pad", time), 0.35 + chart.song.energy * 0.2);
       }, t);
       this.scheduledEvents.push(id);
     }
@@ -217,7 +217,7 @@ export class AudioEngine {
       const id = Tone.getTransport().schedule((time) => {
         if (rand() <= chart.song.arpDensity) {
           const n = chart.scale[Math.floor(rand() * chart.scale.length)] ?? root;
-          this.fmSynth?.triggerAttackRelease(n.replace(/\d+$/, "5"), "16n", time, 0.25 + chart.song.energy * 0.15);
+          this.fmSynth?.triggerAttackRelease(n.replace(/\d+$/, "5"), "16n", this.nextSafeTime("fm", time), 0.25 + chart.song.energy * 0.15);
         }
       }, t);
       this.scheduledEvents.push(id);
@@ -241,71 +241,69 @@ export class AudioEngine {
     time: number,
     noteId = 0
   ): void {
-    const t = this.nextSafeTime(`lane-${lane}`, time);
-
     switch (lane) {
       case 0: // Kick
-        this.membraneSynth?.triggerAttackRelease("C1", "8n", t);
+        this.membraneSynth?.triggerAttackRelease("C1", "8n", this.nextSafeTime("membrane", time));
         break;
       case 1: // Snare
-        this.noiseSynth?.triggerAttackRelease("8n", t);
+        this.noiseSynth?.triggerAttackRelease("8n", this.nextSafeTime("noise", time));
         break;
       case 2: // Hi-hat
-        this.hihatSynth?.triggerAttackRelease("32n", t);
+        this.hihatSynth?.triggerAttackRelease("32n", this.nextSafeTime("hihat", time));
         break;
-      case 3: // Melodic
+      case 3: { // Melodic
         const noteIndex = noteId % Math.max(1, scale.length);
         this.fmSynth?.triggerAttackRelease(
           scale[noteIndex],
           "16n",
-          t,
+          this.nextSafeTime("fm", time),
           this.musicMode === "musical" ? 0.16 : 0.28
         );
         break;
+      }
     }
   }
 
   /** Play a hit sound for feedback with quality based on timing grade */
   playHitSound(lane: number, grade: TimingGrade = "perfect"): void {
-    const now = Tone.now();
     const volOffset = GRADE_VOLUME_OFFSET[grade];
 
     switch (lane) {
       case 0:
         if (this.membraneSynth) {
           this.membraneSynth.volume.value = -8 + volOffset;
-          this.membraneSynth.triggerAttackRelease("C1", "16n", now);
+          this.membraneSynth.triggerAttackRelease("C1", "16n", this.nextSafeTime("membrane", Tone.now()));
         }
         break;
       case 1:
         if (this.noiseSynth) {
           this.noiseSynth.volume.value = -12 + volOffset;
-          this.noiseSynth.triggerAttackRelease("16n", now);
+          this.noiseSynth.triggerAttackRelease("16n", this.nextSafeTime("noise", Tone.now()));
         }
         break;
       case 2:
         if (this.hihatSynth) {
           this.hihatSynth.volume.value = -18 + volOffset;
-          this.hihatSynth.triggerAttackRelease("32n", now);
+          this.hihatSynth.triggerAttackRelease("32n", this.nextSafeTime("hihat", Tone.now()));
         }
         break;
       case 3:
         if (this.fmSynth) {
           this.fmSynth.volume.value = -14 + volOffset;
-          this.fmSynth.triggerAttackRelease("C5", "16n", now);
+          this.fmSynth.triggerAttackRelease("C5", "16n", this.nextSafeTime("fm", Tone.now()));
         }
         break;
     }
 
     // Sparkle overlay on perfect hits
     if (grade === "perfect") {
-      this.sparkleSynth?.triggerAttackRelease("C6", "32n", now);
+      this.sparkleSynth?.triggerAttackRelease("C6", "32n", this.nextSafeTime("sparkle", Tone.now()));
     }
   }
 
   /** Play a short error buzz on miss */
   playMissSound(): void {
-    this.missSynth?.triggerAttackRelease("32n", Tone.now());
+    this.missSynth?.triggerAttackRelease("32n", this.nextSafeTime("miss", Tone.now()));
   }
 
   start(): void {
@@ -315,6 +313,7 @@ export class AudioEngine {
   stop(): void {
     Tone.getTransport().stop();
     Tone.getTransport().position = 0;
+    this.lastScheduledTrigger = {};
   }
 
   pause(): void {
@@ -344,12 +343,11 @@ export class AudioEngine {
 
   /** Play a countdown tick sound */
   playCountdownTick(isFinal: boolean): void {
-    const now = Tone.now();
     if (isFinal) {
       // Higher pitch for "GO"
-      this.fmSynth?.triggerAttackRelease("C5", "8n", now);
+      this.fmSynth?.triggerAttackRelease("C5", "8n", this.nextSafeTime("fm", Tone.now()));
     } else {
-      this.membraneSynth?.triggerAttackRelease("G2", "16n", now);
+      this.membraneSynth?.triggerAttackRelease("G2", "16n", this.nextSafeTime("membrane", Tone.now()));
     }
   }
 
