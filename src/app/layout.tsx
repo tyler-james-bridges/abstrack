@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { Analytics } from "@vercel/analytics/next";
 import NextAbstractWalletProvider from "@/components/NextAbstractWalletProvider";
 import { WalletHeader } from "@/components/wallet/WalletHeader";
 import "./globals.css";
@@ -50,6 +51,7 @@ export default function RootLayout({
         >
           <WalletHeader />
           {children}
+          <Analytics />
         </body>
       </NextAbstractWalletProvider>
     </html>
