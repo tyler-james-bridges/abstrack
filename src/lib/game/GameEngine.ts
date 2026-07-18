@@ -29,8 +29,8 @@ export class GameEngine {
   private phase: GamePhase = "loading";
   private animationId: number | null = null;
   private countdownStart = 0;
-  private gameStartTime = 0;
   private lastCountdownValue = 0;
+  private lastStateEmitTime = 0;
   private eventCallbacks: GameEventCallback[] = [];
   private touchElement: HTMLElement | null = null;
   private pauseEscapeHandler: ((e: KeyboardEvent) => void) | null = null;
@@ -83,6 +83,7 @@ export class GameEngine {
     this.setPhase("countdown");
     this.countdownStart = performance.now();
     this.lastCountdownValue = COUNTDOWN_DURATION + 1;
+    this.emitScoreUpdate();
     this.runCountdownLoop();
   }
 
@@ -107,7 +108,7 @@ export class GameEngine {
 
   private startPlaying(): void {
     this.setPhase("playing");
-    this.gameStartTime = performance.now();
+    this.lastStateEmitTime = 0;
 
     // Start audio
     this.audioEngine.start();
@@ -193,6 +194,12 @@ export class GameEngine {
       this.emitScoreUpdate();
     }
 
+    // Keep song progress and run state moving even between judgements.
+    if (gameTime - this.lastStateEmitTime >= 0.1) {
+      this.lastStateEmitTime = gameTime;
+      this.emitScoreUpdate();
+    }
+
     // Check if song is over
     if (gameTime >= this.chart.duration) {
       this.finishGame();
@@ -232,7 +239,7 @@ export class GameEngine {
       state: {
         phase: this.phase,
         chart: this.chart,
-        elapsedTime: this.audioEngine.getCurrentTime(),
+        elapsedTime: this.getCurrentTime(),
         countdown: 0,
         ...scoreState,
       },
@@ -252,6 +259,10 @@ export class GameEngine {
   }
 
   getCurrentTime(): number {
+    if (this.phase === "countdown") {
+      const elapsed = (performance.now() - this.countdownStart) / 1000;
+      return Math.min(0, elapsed - COUNTDOWN_DURATION);
+    }
     return this.audioEngine.getCurrentTime();
   }
 

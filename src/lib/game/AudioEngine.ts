@@ -55,7 +55,7 @@ export class AudioEngine {
   private fmSynth: Tone.FMSynth | null = null;
   private hihatSynth: Tone.MetalSynth | null = null;
   private bassSynth: Tone.MonoSynth | null = null;
-  private padSynth: Tone.PolySynth | null = null;
+  private padSynths: Tone.Synth[] = [];
 
   // Dedicated synths for real-time interactive feedback (hit/miss/countdown).
   // Separate instances prevent timing conflicts with transport-scheduled events.
@@ -184,11 +184,20 @@ export class AudioEngine {
     }).connect(this.dryChannel);
 
     // Pad: sine oscillator, slower attack, longer release (wet)
-    this.padSynth = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: "sine" },
-      envelope: { attack: 0.3, decay: 0.4, sustain: 0.4, release: 2.0 },
-      volume: -18,
-    }).connect(this.wetChannel);
+    this.padSynths = Array.from(
+      { length: 3 },
+      () =>
+        new Tone.Synth({
+          oscillator: { type: "sine" },
+          envelope: {
+            attack: 0.3,
+            decay: 0.4,
+            sustain: 0.4,
+            release: 2.0,
+          },
+          volume: -18,
+        }).connect(this.wetChannel!)
+    );
 
     // --- Interactive hit synths (go straight to destination for lowest latency) ---
     this.hitMembraneSynth = new Tone.MembraneSynth({
@@ -254,7 +263,13 @@ export class AudioEngine {
       const swingOffset = isOffBeat ? chart.song.swing : 0;
 
       const eventId = Tone.getTransport().schedule((time) => {
-        this.playNoteSound(note.lane, chart.scale, time, note.id);
+        this.playNoteSound(
+          note.lane,
+          chart.scale,
+          time,
+          secondsPerBeat,
+          note.id
+        );
       }, note.time / this.tempoMultiplier + swingOffset);
       this.scheduledEvents.push(eventId);
     }
@@ -264,9 +279,10 @@ export class AudioEngine {
     }
 
     // Schedule end
-    Tone.getTransport().schedule(() => {
-      this.stop();
+    const endId = Tone.getTransport().schedule((time) => {
+      Tone.getTransport().stop(time);
     }, chart.duration / this.tempoMultiplier + 0.5);
+    this.scheduledEvents.push(endId);
   }
 
   private scheduleBackingTrack(chart: BeatChart): void {
@@ -306,12 +322,14 @@ export class AudioEngine {
 
       const id = Tone.getTransport().schedule((time) => {
         const padNotes = chordTones.map((n) => n.replace(/\d+$/, "4"));
-        this.padSynth?.triggerAttackRelease(
-          padNotes,
-          holdDur * 0.9,
-          this.nextSafeTime("pad", time),
-          0.35 + song.energy * 0.2
-        );
+        padNotes.forEach((note, index) => {
+          this.padSynths[index]?.triggerAttackRelease(
+            note,
+            holdDur * 0.9,
+            this.nextSafeTime(`pad-${index}`, time),
+            0.35 + song.energy * 0.2
+          );
+        });
       }, t);
       this.scheduledEvents.push(id);
     }
@@ -338,7 +356,7 @@ export class AudioEngine {
         const id = Tone.getTransport().schedule((time) => {
           this.bassSynth?.triggerAttackRelease(
             note,
-            "8n",
+            beatDur / 2,
             this.nextSafeTime("bass", time)
           );
         }, t);
@@ -369,7 +387,7 @@ export class AudioEngine {
         const id = Tone.getTransport().schedule((time) => {
           this.fmSynth?.triggerAttackRelease(
             noteStr,
-            "16n",
+            subdivisionDur,
             this.nextSafeTime("fm", time),
             0.25 + song.energy * 0.15
           );
@@ -380,12 +398,17 @@ export class AudioEngine {
   }
 
   private nextSafeTime(key: string, time: number): number {
+    // Transport callbacks can arrive a fraction late under load. Tone clamps
+    // past times to "now", which can collapse two distinct events onto the
+    // same timestamp and make monophonic sources throw. Keep every trigger
+    // just ahead of the audio clock and strictly ordered per voice.
+    const candidate = Math.max(time, Tone.getContext().currentTime + 0.001);
     const prev = this.lastScheduledTrigger[key];
-    if (prev == null || time > prev) {
-      this.lastScheduledTrigger[key] = time;
-      return time;
+    if (prev == null || candidate > prev) {
+      this.lastScheduledTrigger[key] = candidate;
+      return candidate;
     }
-    const bumped = prev + 0.0005;
+    const bumped = prev + 0.001;
     this.lastScheduledTrigger[key] = bumped;
     return bumped;
   }
@@ -394,23 +417,34 @@ export class AudioEngine {
     lane: number,
     scale: string[],
     time: number,
+    beatDuration: number,
     noteId = 0
   ): void {
     switch (lane) {
       case 0: // Kick
-        this.membraneSynth?.triggerAttackRelease("C1", "8n", this.nextSafeTime("membrane", time));
+        this.membraneSynth?.triggerAttackRelease(
+          "C1",
+          beatDuration / 2,
+          this.nextSafeTime("membrane", time)
+        );
         break;
       case 1: // Snare
-        this.noiseSynth?.triggerAttackRelease("8n", this.nextSafeTime("noise", time));
+        this.noiseSynth?.triggerAttackRelease(
+          beatDuration / 2,
+          this.nextSafeTime("noise", time)
+        );
         break;
       case 2: // Hi-hat
-        this.hihatSynth?.triggerAttackRelease("32n", this.nextSafeTime("hihat", time));
+        this.hihatSynth?.triggerAttackRelease(
+          beatDuration / 8,
+          this.nextSafeTime("hihat", time)
+        );
         break;
       case 3: { // Melodic
         const noteIndex = noteId % Math.max(1, scale.length);
         this.fmSynth?.triggerAttackRelease(
           scale[noteIndex],
-          "16n",
+          beatDuration / 4,
           this.nextSafeTime("fm", time),
           this.musicMode === "musical" ? 0.16 : 0.28
         );
@@ -428,38 +462,59 @@ export class AudioEngine {
       case 0:
         if (this.hitMembraneSynth) {
           this.hitMembraneSynth.volume.value = -8 + volOffset;
-          this.hitMembraneSynth.triggerAttackRelease("C1", "16n", now);
+          this.hitMembraneSynth.triggerAttackRelease(
+            "C1",
+            "16n",
+            this.nextSafeTime("hit-membrane", now)
+          );
         }
         break;
       case 1:
         if (this.hitNoiseSynth) {
           this.hitNoiseSynth.volume.value = -12 + volOffset;
-          this.hitNoiseSynth.triggerAttackRelease("16n", now);
+          this.hitNoiseSynth.triggerAttackRelease(
+            "16n",
+            this.nextSafeTime("hit-noise", now)
+          );
         }
         break;
       case 2:
         if (this.hitHihatSynth) {
           this.hitHihatSynth.volume.value = -18 + volOffset;
-          this.hitHihatSynth.triggerAttackRelease("32n", now);
+          this.hitHihatSynth.triggerAttackRelease(
+            "32n",
+            this.nextSafeTime("hit-hihat", now)
+          );
         }
         break;
       case 3:
         if (this.hitFmSynth) {
           this.hitFmSynth.volume.value = -14 + volOffset;
-          this.hitFmSynth.triggerAttackRelease("C5", "16n", now);
+          this.hitFmSynth.triggerAttackRelease(
+            "C5",
+            "16n",
+            this.nextSafeTime("hit-fm", now)
+          );
         }
         break;
     }
 
     // Sparkle overlay on perfect hits
     if (grade === "perfect") {
-      this.hitSparkleSynth?.triggerAttackRelease("C6", "32n", now);
+      this.hitSparkleSynth?.triggerAttackRelease(
+        "C6",
+        "32n",
+        this.nextSafeTime("hit-sparkle", now)
+      );
     }
   }
 
   /** Play a short error buzz on miss */
   playMissSound(): void {
-    this.hitMissSynth?.triggerAttackRelease("32n", Tone.now());
+    this.hitMissSynth?.triggerAttackRelease(
+      "32n",
+      this.nextSafeTime("hit-miss", Tone.now())
+    );
   }
 
   start(): void {
@@ -501,16 +556,26 @@ export class AudioEngine {
   playCountdownTick(isFinal: boolean): void {
     const now = Tone.now();
     if (isFinal) {
-      this.hitFmSynth?.triggerAttackRelease("C5", "8n", now);
+      this.hitFmSynth?.triggerAttackRelease(
+        "C5",
+        "8n",
+        this.nextSafeTime("hit-fm", now)
+      );
     } else {
-      this.hitMembraneSynth?.triggerAttackRelease("G2", "16n", now);
+      this.hitMembraneSynth?.triggerAttackRelease(
+        "G2",
+        "16n",
+        this.nextSafeTime("hit-membrane", now)
+      );
     }
   }
 
   /** Set the master volume (in dB, -60 to 0) */
   setVolume(db: number): void {
     Tone.getDestination().volume.value = db;
-    if (this.padSynth) this.padSynth.volume.value = Math.min(-18, db - 24);
+    for (const synth of this.padSynths) {
+      synth.volume.value = Math.min(-18, db - 24);
+    }
     if (this.bassSynth) this.bassSynth.volume.value = Math.min(-12, db - 16);
   }
 
@@ -538,7 +603,7 @@ export class AudioEngine {
     this.hihatSynth?.dispose();
     this.fmSynth?.dispose();
     this.bassSynth?.dispose();
-    this.padSynth?.dispose();
+    for (const synth of this.padSynths) synth.dispose();
     this.hitMembraneSynth?.dispose();
     this.hitNoiseSynth?.dispose();
     this.hitHihatSynth?.dispose();
@@ -554,7 +619,7 @@ export class AudioEngine {
     this.hihatSynth = null;
     this.fmSynth = null;
     this.bassSynth = null;
-    this.padSynth = null;
+    this.padSynths = [];
     this.hitMembraneSynth = null;
     this.hitNoiseSynth = null;
     this.hitHihatSynth = null;

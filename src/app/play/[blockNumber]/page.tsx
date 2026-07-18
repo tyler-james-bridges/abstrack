@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState, useCallback, use } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GameEngine } from "@/lib/game/GameEngine";
-import type { MusicMode } from "@/lib/game/AudioEngine";
 import type { GameEvent } from "@/lib/game/GameEngine";
 import type { BeatChart, FinalScore, GamePhase, GameState } from "@/lib/game/types";
 import { BotController, type BotProfile } from "@/lib/game/BotController";
@@ -13,6 +12,7 @@ import { generateBeatChart } from "@/lib/game/BlockBeatGenerator";
 import { GameCanvas } from "@/components/game/GameCanvas";
 import { GameHUD } from "@/components/game/GameHUD";
 import { GameLoadingScreen } from "@/components/game/GameLoadingScreen";
+import { GameReadyOverlay } from "@/components/game/GameReadyOverlay";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
 import { PauseOverlay } from "@/components/game/PauseOverlay";
 import { HowToPlayOverlay, hasSeenHowToPlay, markHowToPlaySeen } from "@/components/game/HowToPlayOverlay";
@@ -20,6 +20,20 @@ import { BackgroundEffects } from "@/components/ui/BackgroundEffects";
 
 interface PlayPageProps {
   params: Promise<{ blockNumber: string }>;
+}
+
+function createInitialGameState(): GameState {
+  return {
+    phase: "loading",
+    chart: null,
+    score: 0,
+    combo: 0,
+    maxCombo: 0,
+    hits: [],
+    gradeCounts: { perfect: 0, great: 0, good: 0, miss: 0 },
+    elapsedTime: 0,
+    countdown: 0,
+  };
 }
 
 export default function PlayPage({ params }: PlayPageProps) {
@@ -31,28 +45,21 @@ export default function PlayPage({ params }: PlayPageProps) {
   const engineRef = useRef<GameEngine | null>(null);
   const botRef = useRef<BotController | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const pendingLoadRef = useRef<(() => Promise<void>) | null>(null);
   const epochRef = useRef(0);
 
   const [phase, setPhase] = useState<GamePhase>("loading");
   const [chart, setChart] = useState<BeatChart | null>(null);
-  const [gameState, setGameState] = useState<GameState>({
-    phase: "loading",
-    chart: null,
-    score: 0,
-    combo: 0,
-    maxCombo: 0,
-    hits: [],
-    gradeCounts: { perfect: 0, great: 0, good: 0, miss: 0 },
-    elapsedTime: 0,
-    countdown: 0,
-  });
+  const [gameState, setGameState] = useState<GameState>(
+    createInitialGameState
+  );
   const [finalScore, setFinalScore] = useState<FinalScore | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [loadingStatus, setLoadingStatus] = useState("Fetching block data...");
   const [error, setError] = useState<string | null>(null);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [readyToStart, setReadyToStart] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
-  const [waitingForHowToPlay, setWaitingForHowToPlay] = useState(false);
 
   const botEnabled = searchParams.get("bot") === "1";
   const botProfileParam = searchParams.get("profile") as BotProfile | null;
@@ -61,25 +68,25 @@ export default function PlayPage({ params }: PlayPageProps) {
       ? botProfileParam
       : "great";
 
-  // Check if first visit and show how-to-play
-  useEffect(() => {
-    if (!hasSeenHowToPlay()) {
-      setShowHowToPlay(true);
-    }
-  }, []);
-
   const startGame = useCallback(async () => {
     // Tear down any previous game (handles React strict mode double-mount)
     botRef.current?.stop();
     botRef.current = null;
     engineRef.current?.destroy();
     engineRef.current = null;
+    pendingLoadRef.current = null;
 
     const epoch = ++epochRef.current;
+    const needsTutorial = !hasSeenHowToPlay();
 
     try {
       setPhase("loading");
       setFinalScore(null);
+      setError(null);
+      setChart(null);
+      setGameState(createInitialGameState());
+      setReadyToStart(false);
+      setShowHowToPlay(false);
       setLoadingStatus("Fetching block data...");
 
       const blockData = await getBlockForGame(blockNumber);
@@ -135,51 +142,55 @@ export default function PlayPage({ params }: PlayPageProps) {
         }
       });
 
-      // If first visit, wait for how-to-play dismissal before loading engine
-      if (!hasSeenHowToPlay()) {
-        setWaitingForHowToPlay(true);
-        // Store the engine load for later
-        const loadEngine = async () => {
-          if (epochRef.current !== epoch) return;
-          await engine.load(generatedChart, containerRef.current ?? undefined);
-        };
-        // We'll call loadEngine when how-to-play is dismissed
-        (window as unknown as Record<string, () => Promise<void>>).__abstrackLoadEngine = loadEngine;
-      } else {
+      // AudioContext must be started from a player gesture. Hold the engine
+      // load until either the tutorial CTA or the compact ready screen is used.
+      pendingLoadRef.current = async () => {
         if (epochRef.current !== epoch) return;
         await engine.load(generatedChart, containerRef.current ?? undefined);
-      }
+      };
+      setLoadingStatus("Block ready");
+      setReadyToStart(true);
+      setShowHowToPlay(needsTutorial);
     } catch (err) {
       if (epochRef.current !== epoch) return;
       setError(err instanceof Error ? err.message : "Failed to load game");
     }
   }, [blockNumber, botEnabled, botProfile]);
 
+  const cleanupGame = useCallback(() => {
+    epochRef.current++;
+    pendingLoadRef.current = null;
+    botRef.current?.stop();
+    botRef.current = null;
+    engineRef.current?.destroy();
+    engineRef.current = null;
+  }, []);
+
   useEffect(() => {
     startGame();
+    return cleanupGame;
+  }, [startGame, cleanupGame]);
 
-    return () => {
-      botRef.current?.stop();
-      botRef.current = null;
-      engineRef.current?.destroy();
-      engineRef.current = null;
-    };
-  }, [startGame]);
+  const handleStartRun = useCallback(async () => {
+    const loadEngine = pendingLoadRef.current;
+    if (!loadEngine) return;
+
+    pendingLoadRef.current = null;
+    setReadyToStart(false);
+    setShowHowToPlay(false);
+    setLoadingStatus("Tuning the block...");
+
+    try {
+      await loadEngine();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to start game");
+    }
+  }, []);
 
   const handleDismissHowToPlay = useCallback(async () => {
     markHowToPlaySeen();
-    setShowHowToPlay(false);
-
-    // If we were waiting, load the engine now
-    if (waitingForHowToPlay && engineRef.current && chart) {
-      setWaitingForHowToPlay(false);
-      const loadEngine = (window as unknown as Record<string, (() => Promise<void>) | undefined>).__abstrackLoadEngine;
-      if (loadEngine) {
-        await loadEngine();
-        delete (window as unknown as Record<string, (() => Promise<void>) | undefined>).__abstrackLoadEngine;
-      }
-    }
-  }, [waitingForHowToPlay, chart]);
+    await handleStartRun();
+  }, [handleStartRun]);
 
   const handlePlayAgain = useCallback(() => {
     botRef.current?.stop();
@@ -187,17 +198,7 @@ export default function PlayPage({ params }: PlayPageProps) {
     engineRef.current?.destroy();
     engineRef.current = null;
     setChart(null);
-    setGameState({
-      phase: "loading",
-      chart: null,
-      score: 0,
-      combo: 0,
-      maxCombo: 0,
-      hits: [],
-      gradeCounts: { perfect: 0, great: 0, good: 0, miss: 0 },
-      elapsedTime: 0,
-      countdown: 0,
-    });
+    setGameState(createInitialGameState());
     startGame();
   }, [startGame]);
 
@@ -219,14 +220,6 @@ export default function PlayPage({ params }: PlayPageProps) {
 
   const handleVolumeChange = useCallback((db: number) => {
     engineRef.current?.setVolume(db);
-  }, []);
-
-  const handleMusicModeChange = useCallback((mode: MusicMode) => {
-    engineRef.current?.setMusicMode(mode);
-  }, []);
-
-  const handleTempoChange = useCallback((multiplier: number) => {
-    engineRef.current?.setTempoMultiplier(multiplier);
   }, []);
 
   const getCurrentTime = useCallback(() => {
@@ -281,6 +274,7 @@ export default function PlayPage({ params }: PlayPageProps) {
           <GameOverScreen
             finalScore={finalScore}
             onPlayAgain={handlePlayAgain}
+            isAgentRun={botEnabled}
           />
         </div>
       )}
@@ -291,11 +285,11 @@ export default function PlayPage({ params }: PlayPageProps) {
           <GameCanvas
             chart={chart}
             getCurrentTime={getCurrentTime}
-            isPlaying={phase === "playing"}
+            isPlaying={phase === "playing" || phase === "countdown"}
           />
           {/* CRT scanline overlay on game canvas */}
           <div className="absolute inset-0 crt-scanlines z-[5]" />
-          <GameHUD state={gameState} onVolumeChange={handleVolumeChange} onMusicModeChange={handleMusicModeChange} onTempoChange={handleTempoChange} />
+          <GameHUD state={gameState} onVolumeChange={handleVolumeChange} />
         </>
       )}
 
@@ -318,7 +312,7 @@ export default function PlayPage({ params }: PlayPageProps) {
       {botEnabled && phase !== "finished" && (
         <div
           className="absolute right-3 z-20 px-3 py-1 rounded-full border border-[#3EB95F]/30 text-[#3EB95F] text-[10px] uppercase tracking-widest font-[family-name:var(--font-avenue-mono)] bg-black/60"
-          style={{ top: "calc(env(safe-area-inset-top, 0px) + 10px)" }}
+          style={{ top: "calc(env(safe-area-inset-top, 0px) + 88px)" }}
           data-game-ui
         >
           Agent Mode · {botProfile}
@@ -327,16 +321,21 @@ export default function PlayPage({ params }: PlayPageProps) {
 
       {/* Countdown overlay */}
       {phase === "countdown" && countdown > 0 && (
-        <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/50" data-game-ui>
-          <p
-            key={countdown}
-            className="text-6xl sm:text-9xl font-black text-white animate-countdown-pop"
-            style={{
-              textShadow: "0 0 40px rgba(78, 205, 196, 0.5)",
-            }}
-          >
-            {countdown}
-          </p>
+        <div className="absolute inset-0 z-30 pointer-events-none" data-game-ui>
+          <div className="absolute top-[17%] left-1/2 -translate-x-1/2 text-center">
+            <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.35em] text-[#A0E7AB]/60 font-[family-name:var(--font-avenue-mono)]">
+              Get ready
+            </p>
+            <p
+              key={countdown}
+              className="text-5xl sm:text-7xl font-black text-white/85 animate-countdown-pop font-[family-name:var(--font-roobert)]"
+              style={{
+                textShadow: "0 0 32px rgba(62,185,95,0.55)",
+              }}
+            >
+              {countdown}
+            </p>
+          </div>
         </div>
       )}
 
@@ -350,16 +349,25 @@ export default function PlayPage({ params }: PlayPageProps) {
         <HowToPlayOverlay onDismiss={handleDismissHowToPlay} />
       )}
 
+      {readyToStart && chart && !showHowToPlay && (
+        <GameReadyOverlay
+          chart={chart}
+          botEnabled={botEnabled}
+          onStart={handleStartRun}
+        />
+      )}
+
       {/* Mobile pause button — 44px touch target, centered, safe area aware */}
       {phase === "playing" && (
         <button
           onClick={handlePause}
-          className="absolute left-1/2 -translate-x-1/2 z-20 md:hidden flex items-center justify-center w-11 h-11 rounded-full bg-white/5 border border-white/10 text-white/40 active:bg-white/15 active:text-white/70 transition-colors"
+          className="absolute z-20 md:hidden flex items-center justify-center w-11 h-11 rounded-full bg-white/5 border border-white/10 text-white/40 active:bg-white/15 active:text-white/70 transition-colors"
           aria-label="Pause"
           data-game-ui
           style={{
             touchAction: "auto",
             top: "calc(env(safe-area-inset-top, 0px) + 8px)",
+            left: "52px",
           }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">

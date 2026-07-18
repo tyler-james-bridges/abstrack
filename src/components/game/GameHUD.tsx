@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import type { GameState } from "@/lib/game/types";
-import type { MusicMode } from "@/lib/game/AudioEngine";
+import { COMBO_MULTIPLIER_TIERS } from "@/lib/game/constants";
 
 const VOLUME_STORAGE_KEY = "abstrack-volume";
 
@@ -25,39 +25,33 @@ function getStoredVolume(): number {
 interface GameHUDProps {
   state: GameState;
   onVolumeChange?: (db: number) => void;
-  onMusicModeChange?: (mode: MusicMode) => void;
-  onTempoChange?: (multiplier: number) => void;
 }
 
-const MUSIC_MODE_STORAGE_KEY = "abstrack-music-mode";
-const TEMPO_STORAGE_KEY = "abstrack-tempo-multiplier";
+function getComboMultiplier(combo: number): number {
+  return (
+    COMBO_MULTIPLIER_TIERS.find((tier) => combo >= tier.threshold)
+      ?.multiplier ?? 1
+  );
+}
 
-export function GameHUD({ state, onVolumeChange, onMusicModeChange, onTempoChange }: GameHUDProps) {
+export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
   const { score, combo, chart, elapsedTime } = state;
-  const progress = chart ? Math.min(elapsedTime / chart.duration, 1) : 0;
+  const progress = chart
+    ? Math.max(0, Math.min(elapsedTime / chart.duration, 1))
+    : 0;
+  const multiplier = getComboMultiplier(combo);
+  const nextTier = [...COMBO_MULTIPLIER_TIERS]
+    .reverse()
+    .find((tier) => tier.threshold > combo);
 
   const [volume, setVolume] = useState<number>(70);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
-  const [musicMode, setMusicMode] = useState<MusicMode>("musical");
-  const [tempoMultiplier, setTempoMultiplier] = useState<number>(1);
 
   useEffect(() => {
     const stored = getStoredVolume();
     setVolume(stored);
     onVolumeChange?.(sliderToDb(stored));
-
-    if (typeof window !== "undefined") {
-      const storedMode = localStorage.getItem(MUSIC_MODE_STORAGE_KEY);
-      const mode: MusicMode = storedMode === "classic" ? "classic" : "musical";
-      setMusicMode(mode);
-      onMusicModeChange?.(mode);
-
-      const storedTempo = Number(localStorage.getItem(TEMPO_STORAGE_KEY) ?? "1");
-      const clamped = Math.max(0.7, Math.min(1.5, Number.isFinite(storedTempo) ? storedTempo : 1));
-      setTempoMultiplier(clamped);
-      onTempoChange?.(clamped);
-    }
-  }, [onVolumeChange, onMusicModeChange, onTempoChange]);
+  }, [onVolumeChange]);
 
   const handleVolumeChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,24 +62,6 @@ export function GameHUD({ state, onVolumeChange, onMusicModeChange, onTempoChang
     },
     [onVolumeChange]
   );
-
-  const toggleMusicMode = () => {
-    const next: MusicMode = musicMode === "musical" ? "classic" : "musical";
-    setMusicMode(next);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(MUSIC_MODE_STORAGE_KEY, next);
-    }
-    onMusicModeChange?.(next);
-  };
-
-  const updateTempo = (next: number) => {
-    const clamped = Math.max(0.7, Math.min(1.5, Number(next.toFixed(2))));
-    setTempoMultiplier(clamped);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(TEMPO_STORAGE_KEY, String(clamped));
-    }
-    onTempoChange?.(clamped);
-  };
 
   const volumeIcon =
     volume === 0 ? (
@@ -142,48 +118,34 @@ export function GameHUD({ state, onVolumeChange, onMusicModeChange, onTempoChang
         </p>
         {chart && (
           <p className="text-[10px] sm:text-xs text-white/45 mt-0.5 font-[family-name:var(--font-avenue-mono)] tracking-wider">
-            {Math.round(chart.bpm * tempoMultiplier)} BPM · #{chart.blockNumber}
+            {chart.bpm} BPM · #{chart.blockNumber}
           </p>
         )}
+        {combo > 0 && (
+          <div className="mt-2 flex items-center justify-end gap-2 border-t border-white/10 pt-1.5 font-[family-name:var(--font-avenue-mono)]">
+            <span className="text-[10px] uppercase tracking-wider text-white/50">
+              {combo} combo
+            </span>
+            <span
+              className="rounded px-1.5 py-0.5 text-[10px] font-bold"
+              style={{
+                color: multiplier > 1 ? "#ffd700" : "#A0E7AB",
+                background:
+                  multiplier > 1
+                    ? "rgba(255,215,0,0.10)"
+                    : "rgba(160,231,171,0.08)",
+              }}
+            >
+              ×{multiplier}
+            </span>
+            {nextTier && (
+              <span className="hidden sm:inline text-[9px] text-white/25">
+                ×{nextTier.multiplier} in {nextTier.threshold - combo}
+              </span>
+            )}
+          </div>
+        )}
       </div>
-
-      {/* Combo badge */}
-      {combo > 1 && (
-        <div className="absolute top-[28%] sm:top-[30%] left-1/2 -translate-x-1/2 text-center rounded-2xl border border-white/10 bg-black/45 px-4 py-2 backdrop-blur-sm">
-          <p
-            className="text-2xl sm:text-5xl font-black text-white/90 tabular-nums leading-none font-[family-name:var(--font-avenue-mono)]"
-            style={{
-              textShadow:
-                combo >= 50
-                  ? "0 0 20px #ffd700, 0 0 40px #ffd700, 0 0 80px rgba(255,215,0,0.3)"
-                  : combo >= 25
-                    ? "0 0 15px #3EB95F, 0 0 30px rgba(182,255,0,0.3)"
-                    : "0 0 10px rgba(255,255,255,0.3)",
-              color:
-                combo >= 50
-                  ? "#ffd700"
-                  : combo >= 25
-                    ? "#3EB95F"
-                    : undefined,
-            }}
-          >
-            {combo}
-          </p>
-          <p
-            className="text-[9px] sm:text-xs font-bold tracking-[0.3em] uppercase font-[family-name:var(--font-avenue-mono)]"
-            style={{
-              color:
-                combo >= 50
-                  ? "rgba(255,215,0,0.6)"
-                  : combo >= 25
-                    ? "rgba(182,255,0,0.6)"
-                    : "rgba(255,255,255,0.4)",
-            }}
-          >
-            combo
-          </p>
-        </div>
-      )}
 
       {/* Volume control */}
       <div
@@ -193,34 +155,7 @@ export function GameHUD({ state, onVolumeChange, onMusicModeChange, onTempoChang
           touchAction: "auto",
         }}
       >
-        <div className="flex items-center gap-1">
-          <button
-            onClick={toggleMusicMode}
-            className="flex items-center justify-center h-9 px-2 rounded-md border border-[#73C98C]/20 bg-black/45 text-[10px] tracking-wider text-[#A0E7AB]/85 hover:bg-black/65"
-            aria-label="Toggle music mode"
-            title={`Music mode: ${musicMode}`}
-          >
-            {musicMode === "musical" ? "MUS" : "CLS"}
-          </button>
-          <div className="flex items-center gap-1 rounded-md border border-[#73C98C]/20 bg-black/45 px-1 h-9">
-            <button
-              onClick={() => updateTempo(tempoMultiplier - 0.05)}
-              className="w-6 h-6 text-[#A0E7AB]/85 hover:text-white"
-              aria-label="Tempo down"
-            >
-              -
-            </button>
-            <span className="text-[10px] text-[#A0E7AB]/85 min-w-[44px] text-center font-[family-name:var(--font-avenue-mono)]">
-              {Math.round((state.chart?.bpm ?? 0) * tempoMultiplier)}
-            </span>
-            <button
-              onClick={() => updateTempo(tempoMultiplier + 0.05)}
-              className="w-6 h-6 text-[#A0E7AB]/85 hover:text-white"
-              aria-label="Tempo up"
-            >
-              +
-            </button>
-          </div>
+        <div className="flex items-center">
           <button
             onClick={() => setShowVolumeSlider((v) => !v)}
             className="flex items-center justify-center w-11 h-11 text-white/40 hover:text-[#3EB95F] active:text-[#3EB95F] transition-colors rounded-lg"
