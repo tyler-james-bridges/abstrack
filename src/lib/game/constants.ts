@@ -60,11 +60,18 @@ export const LANE_KEYS: Record<string, Lane> = {
 
 export const LANE_LABELS = ["D", "F", "J", "K"] as const;
 
+export const LANE_NAMES = [
+  "ECONOMY",
+  "STANDARD",
+  "PRIORITY",
+  "EXPRESS",
+] as const;
+
 export const LANE_COLORS = [
-  "#ff6b6b", // red
-  "#3EB95F", // teal
-  "#73C98C", // blue
-  "#f9ca24", // yellow
+  "#2f7f6a", // low-fee teal
+  "#3EB95F", // Abstract green
+  "#f2c94c", // priority amber
+  "#ff6b5f", // congested coral
 ] as const;
 
 // Grade colors

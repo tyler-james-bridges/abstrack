@@ -33,56 +33,52 @@ export function PauseOverlay({ onResume, onQuit }: PauseOverlayProps) {
       data-game-ui
       style={{
         touchAction: "auto",
-        background: "rgba(0,0,0,0.85)",
-        backdropFilter: "blur(4px)",
+        background: "rgba(1,5,3,0.9)",
+        backdropFilter: "blur(8px)",
       }}
     >
       {/* CRT scanlines */}
       <div className="absolute inset-0 crt-scanlines" />
 
-      <div className="retro-card flex flex-col items-center gap-6 sm:gap-8 px-6 py-7 w-full max-w-xs relative z-10 border border-[#73C98C]/25">
-        {/* Pause icon with neon glow */}
+      <div className="block-surface flex flex-col items-center gap-6 px-6 py-7 w-full max-w-xs relative z-10">
         <div className="flex items-center gap-3">
           <div
-            className="w-3.5 sm:w-4 h-12 sm:h-14 rounded-sm"
+            className="w-2.5 h-10 rounded-[2px]"
             style={{
               background: "#3EB95F",
-              boxShadow: "0 0 10px rgba(182,255,0,0.5), 0 0 20px rgba(182,255,0,0.2)",
+              boxShadow: "0 0 10px rgba(62,185,95,0.45)",
             }}
           />
           <div
-            className="w-3.5 sm:w-4 h-12 sm:h-14 rounded-sm"
+            className="w-2.5 h-10 rounded-[2px]"
             style={{
               background: "#3EB95F",
-              boxShadow: "0 0 10px rgba(182,255,0,0.5), 0 0 20px rgba(182,255,0,0.2)",
+              boxShadow: "0 0 10px rgba(62,185,95,0.45)",
             }}
           />
         </div>
 
-        <h2
-          className="text-2xl sm:text-3xl font-bold text-white font-[family-name:var(--font-roobert)]"
-          style={{
-            textShadow: "0 0 15px rgba(182,255,0,0.4)",
-          }}
-        >
-          Paused
-        </h2>
+        <div className="text-center">
+          <p className="text-[9px] uppercase tracking-[0.22em] text-[#A0E7AB]/45 font-[family-name:var(--font-avenue-mono)]">
+            Transaction flow halted
+          </p>
+          <h2 className="mt-1 text-2xl sm:text-3xl font-bold text-white font-[family-name:var(--font-roobert)]">
+            Sequencer paused
+          </h2>
+        </div>
 
         <div className="flex flex-col gap-3 w-full">
           <button
             onClick={onResume}
-            className="neon-btn w-full h-12 sm:h-14 rounded-full bg-gradient-to-r from-[#3EB95F] to-[#73C98C] text-black font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)]"
-            style={{
-              boxShadow: "0 0 20px rgba(182,255,0,0.2)",
-            }}
+            className="processing-btn w-full h-12 rounded-md bg-[#A0E7AB] text-[#031006] font-bold text-sm hover:bg-[#b9f2c2] active:scale-[0.99] transition-all font-[family-name:var(--font-roobert)]"
           >
-            Resume
+            Resume processing
           </button>
           <button
             onClick={onQuit}
-            className="neon-btn w-full h-12 sm:h-14 rounded-full border border-white/15 text-white/70 font-bold text-sm hover:bg-white/5 hover:border-white/25 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)]"
+            className="w-full h-12 rounded-md border border-white/12 text-white/55 font-bold text-sm hover:bg-white/5 hover:text-white/75 active:scale-[0.99] transition-all font-[family-name:var(--font-roobert)]"
           >
-            Quit
+            Abandon block
           </button>
         </div>
 

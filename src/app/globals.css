@@ -1,20 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
+  --background: #020503;
   --foreground: #ededed;
 
-  /* Abstract-inspired palette */
+  /* Abstract blockspace palette */
   --abstrack-perfect: #A0E7AB;
   --abstrack-great: #3EB95F;
-  --abstrack-good: #73C98C;
-  --abstrack-miss: #ff6b6b;
+  --abstrack-good: #f2c94c;
+  --abstrack-miss: #ff6b5f;
+  --abstrack-panel: #050b08;
+  --abstrack-line: rgba(160, 231, 171, 0.14);
 
-  /* Lane colors */
-  --abstrack-lane-0: #ff6b6b;
+  /* Fee-band colors */
+  --abstrack-lane-0: #2f7f6a;
   --abstrack-lane-1: #3EB95F;
-  --abstrack-lane-2: #73C98C;
-  --abstrack-lane-3: #A0E7AB;
+  --abstrack-lane-2: #f2c94c;
+  --abstrack-lane-3: #ff6b5f;
 }
 
 @theme inline {
@@ -27,7 +29,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-roobert), Arial, Helvetica, sans-serif;
   /* Prevent pull-to-refresh and overscroll bouncing in the game */
   overscroll-behavior: none;
 }
@@ -247,7 +249,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ================================================================
-   RETRO ARCADE / SYNTHWAVE DESIGN SYSTEM
+   BLOCKSPACE / SEQUENCER DESIGN SYSTEM
    ================================================================ */
 
 /* Neon text glow — pulsing animation */
@@ -286,16 +288,31 @@ input[type="range"]::-moz-range-thumb {
   }
 }
 
-/* Retro card — the standard card style throughout the app */
-.retro-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(62, 185, 95, 0.15);
-  border-radius: 12px;
+/* Data surfaces are square, quiet, and weighted toward the left edge. */
+.retro-card,
+.block-surface {
+  position: relative;
+  background:
+    linear-gradient(145deg, rgba(8, 19, 13, 0.94), rgba(3, 8, 5, 0.94));
+  border: 1px solid rgba(160, 231, 171, 0.13);
+  border-radius: 7px;
   box-shadow:
-    0 0 15px rgba(62, 185, 95, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(8px);
-  animation: border-glow 4s ease-in-out infinite;
+    0 24px 70px rgba(0, 0, 0, 0.28),
+    inset 3px 0 0 rgba(62, 185, 95, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(12px);
+}
+
+.block-surface::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: 18px;
+  width: 46px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(160, 231, 171, 0.65));
+  box-shadow: 0 0 8px rgba(62, 185, 95, 0.32);
+  pointer-events: none;
 }
 
 /* Retro section header — with underline glow */
@@ -325,14 +342,14 @@ input[type="range"]::-moz-range-thumb {
   50% { opacity: 0.6; }
 }
 
-/* CRT scanline overlay — very subtle */
+/* Fine ledger rows — subtle enough to sit over a moving playfield. */
 .crt-scanlines {
   background: repeating-linear-gradient(
     0deg,
-    rgba(0, 0, 0, 0.03) 0px,
-    rgba(0, 0, 0, 0.03) 1px,
+    rgba(160, 231, 171, 0.012) 0px,
+    rgba(160, 231, 171, 0.012) 1px,
     transparent 1px,
-    transparent 3px
+    transparent 5px
   );
   pointer-events: none;
 }
@@ -359,6 +376,38 @@ input[type="range"]::-moz-range-thumb {
   opacity: 1;
 }
 
+.processing-btn {
+  position: relative;
+  isolation: isolate;
+  box-shadow:
+    0 10px 28px rgba(62, 185, 95, 0.12),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.16);
+}
+
+.processing-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 0 38%,
+    rgba(255, 255, 255, 0.28) 48%,
+    transparent 58% 100%
+  );
+  transform: translateX(-70%);
+  transition:
+    transform 360ms ease,
+    opacity 180ms ease;
+}
+
+.processing-btn:hover::after {
+  opacity: 0.7;
+  transform: translateX(70%);
+}
+
 /* Star twinkle for background particles */
 @keyframes twinkle {
   0%, 100% { opacity: 0.2; transform: scale(1); }
@@ -382,4 +431,52 @@ input[type="range"]::-moz-range-thumb {
     0 0 8px rgba(62, 185, 95, 0.15),
     inset 0 0 4px rgba(62, 185, 95, 0.05);
   outline: none;
+}
+
+@keyframes packet-index {
+  0%,
+  100% {
+    background: rgba(62, 185, 95, 0.035);
+    border-color: rgba(62, 185, 95, 0.1);
+  }
+  50% {
+    background: rgba(62, 185, 95, 0.28);
+    border-color: rgba(160, 231, 171, 0.42);
+    box-shadow: 0 0 8px rgba(62, 185, 95, 0.16);
+  }
+}
+
+@keyframes packet-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.18;
+  }
+  50% {
+    transform: translate3d(18px, 5px, 0);
+    opacity: 0.34;
+  }
+}
+
+kbd {
+  display: inline-flex;
+  min-width: 1.35rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 0.15rem 0.3rem;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

@@ -11,7 +11,7 @@ export function SignInButton() {
     return (
       <div className="flex items-center justify-center w-10 h-10">
         <div className="animate-spin">
-          <Image src="/abs.svg" alt="Loading" width={24} height={24} />
+          <Image src="/abs.svg" alt="Loading" width={27} height={24} />
         </div>
       </div>
     );
@@ -29,7 +29,7 @@ export function SignInButton() {
         src="/abs-green.svg"
         alt="Abstract logomark"
         width={20}
-        height={20}
+        height={18}
       />
       Sign in with Abstract
     </button>

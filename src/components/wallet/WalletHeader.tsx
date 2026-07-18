@@ -84,7 +84,7 @@ export function WalletHeader() {
       >
         <div className="flex items-center justify-center h-11 w-11 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
           <div className="animate-spin">
-            <Image src="/abs.svg" alt="Loading" width={18} height={18} />
+            <Image src="/abs.svg" alt="Loading" width={20} height={18} />
           </div>
         </div>
       </div>
@@ -108,7 +108,7 @@ export function WalletHeader() {
           <Image
             src="/abs.svg"
             alt="Abstract"
-            width={16}
+            width={18}
             height={16}
             className="opacity-70"
           />

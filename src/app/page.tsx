@@ -2,7 +2,6 @@
 
 import { useAccount } from "wagmi";
 import { BackgroundEffects } from "@/components/ui/BackgroundEffects";
-import { SignInButton } from "@/components/wallet/SignInButton";
 import { BlockPicker } from "@/components/home/BlockPicker";
 import { RecentBlocks } from "@/components/home/RecentBlocks";
 import { Leaderboard } from "@/components/home/Leaderboard";
@@ -15,46 +14,79 @@ export default function Home() {
   const { address } = useAccount();
 
   return (
-    <div className="relative min-h-screen bg-black overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden bg-[#020503]">
       <BackgroundEffects />
 
-      <main className="relative z-10 flex flex-col items-center px-4 pt-20 pb-8 sm:py-20 text-white safe-x safe-bottom">
-        {/* Logo / Branding */}
-        <div className="flex flex-col items-center gap-3 sm:gap-4 mb-8 sm:mb-12">
-          <h1
-            className="text-6xl sm:text-8xl font-black tracking-tighter font-[family-name:var(--font-roobert)]"
-            style={{
-              color: "#73C98C",
-              textShadow: "0 0 14px rgba(62,185,95,0.32), 0 0 28px rgba(62,185,95,0.16)",
-            }}
-          >
-            ABSTRACK
-          </h1>
-          <p className="text-xs sm:text-sm text-white/40 font-[family-name:var(--font-avenue-mono)] text-center max-w-sm tracking-wider uppercase">
-            Blockchain rhythm &middot; Every block is a unique beat
-          </p>
-        </div>
+      <main className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-10 pt-24 text-white safe-x safe-bottom sm:pt-20">
+        <header className="mb-8 border-b border-white/8 pb-7 sm:mb-10 sm:pb-9">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-[#3EB95F] shadow-[0_0_10px_rgba(62,185,95,0.65)]" />
+            <p className="text-[9px] uppercase tracking-[0.28em] text-[#A0E7AB]/48 font-[family-name:var(--font-avenue-mono)]">
+              Abstract mainnet · block builder online
+            </p>
+          </div>
 
-        {/* Guest-first gameplay: always playable, wallet only for on-chain identity */}
-        <div className="w-full flex flex-col items-center">
-          {!address && (
-            <div className="flex flex-col items-center gap-3 mt-2 mb-6">
-              <SignInButton />
-              <p className="text-xs text-white/35 max-w-sm text-center font-[family-name:var(--font-avenue-mono)] tracking-wide">
-                Play instantly as guest. Connect wallet only if you want your scores saved on-chain.
+          <div className="mt-5 flex flex-col items-start justify-between gap-5 md:flex-row md:items-end">
+            <div>
+              <p className="text-sm font-black tracking-[-0.03em] text-[#3EB95F] font-[family-name:var(--font-roobert)]">
+                ABSTRACK / SEQUENCER
+              </p>
+              <h1 className="mt-2 max-w-3xl text-5xl sm:text-7xl font-black tracking-[-0.065em] leading-[0.86] text-white font-[family-name:var(--font-roobert)]">
+                BUILD THE BLOCK.
+                <br />
+                <span className="text-white/38">HIT THE BEAT.</span>
+              </h1>
+            </div>
+            <div className="max-w-xs border-l border-[#3EB95F]/25 pl-4">
+              <p className="text-xs leading-relaxed text-white/42 font-[family-name:var(--font-avenue-mono)]">
+                A rhythm sequencer generated from real Abstract block activity.
+                Confirm packets. Hold throughput. Publish the run.
+              </p>
+              {!address && (
+                <p className="mt-2 text-[9px] uppercase tracking-wider text-[#A0E7AB]/38 font-[family-name:var(--font-avenue-mono)]">
+                  Guest mode active · connect only to publish
+                </p>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <div className="flex w-full flex-col gap-5 sm:gap-6">
+          <BlockPicker />
+          <RecentBlocks />
+
+          <section className="mt-2">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-[8px] uppercase tracking-[0.22em] text-[#A0E7AB]/42 font-[family-name:var(--font-avenue-mono)]">
+                  Network competition
+                </p>
+                <h2 className="mt-1 text-xl font-bold text-white/82 font-[family-name:var(--font-roobert)]">
+                  Sequencer records
+                </h2>
+              </div>
+              <p className="hidden text-[8px] uppercase tracking-wider text-white/20 sm:block font-[family-name:var(--font-avenue-mono)]">
+                Scores settle on Abstract
               </p>
             </div>
-          )}
 
-          <DailyChallengeCard />
-          <BlockPicker />
-          <DailyLeaderboard />
-          <RecentBlocks />
-          <PlayerBestScores />
-          <Leaderboard />
+            <div className="grid items-start gap-5 lg:grid-cols-2">
+              <div className="flex flex-col gap-5">
+                <DailyChallengeCard />
+                <DailyLeaderboard />
+              </div>
+              <div className="flex flex-col gap-5">
+                <PlayerBestScores />
+                <Leaderboard />
+              </div>
+            </div>
+          </section>
 
-          <div className="mt-8 flex flex-col items-center gap-2">
+          <div className="mt-4 flex flex-col items-center gap-2 border-t border-white/6 pt-6">
             <ContractLink />
+            <p className="text-[8px] uppercase tracking-[0.18em] text-white/16 font-[family-name:var(--font-avenue-mono)]">
+              Deterministic block data · player-driven confirmation
+            </p>
           </div>
         </div>
       </main>

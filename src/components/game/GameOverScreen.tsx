@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useWaitForTransactionReceipt } from "wagmi";
-import type { FinalScore } from "@/lib/game/types";
+import type { BeatChart, FinalScore } from "@/lib/game/types";
 import { GRADE_COLORS, MAX_SCORE } from "@/lib/game/constants";
 import { useSessionScoreSubmit } from "@/hooks/useSessionScoreSubmit";
 import { abscanTxUrl } from "@/lib/format";
@@ -14,6 +14,7 @@ import { pickDailyChallengeBlock } from "@/lib/game/dailyChallenge";
 
 interface GameOverScreenProps {
   finalScore: FinalScore;
+  chart?: BeatChart;
   onPlayAgain: () => void;
   isAgentRun?: boolean;
 }
@@ -122,6 +123,7 @@ function parseSubmissionError(err: unknown): string {
 
 export function GameOverScreen({
   finalScore,
+  chart,
   onPlayAgain,
   isAgentRun = false,
 }: GameOverScreenProps) {
@@ -272,219 +274,258 @@ export function GameOverScreen({
   const accuracy = (finalScore.accuracy * 100).toFixed(1);
   const gradeColor = GRADE_COLORS_MAP[finalScore.letterGrade] ?? "#fff";
   const gradeGlow = GRADE_GLOW[finalScore.letterGrade] ?? "";
+  const includedPackets =
+    finalScore.gradeCounts.perfect +
+    finalScore.gradeCounts.great +
+    finalScore.gradeCounts.good;
+  const filledCells = Math.round(finalScore.accuracy * 32);
 
   return (
-    <div className="flex flex-col items-center min-h-dvh bg-black text-white overflow-y-auto safe-all">
-      {/* CRT scanline overlay */}
+    <div className="flex min-h-dvh flex-col items-center overflow-y-auto bg-[#020503] text-white safe-all">
       <div className="absolute inset-0 crt-scanlines z-10 pointer-events-none" />
 
-      <div className="w-full max-w-md mx-auto px-4 py-6 sm:py-10 flex flex-col items-center justify-center flex-1 relative z-20">
-        {/* Letter Grade — dramatic neon display */}
-        <div className="w-full text-center mb-5 sm:mb-8 py-8 sm:py-10 relative">
-          {/* Background glow */}
-          <div
-            className="absolute inset-0 rounded-2xl"
-            style={{
-              background: `radial-gradient(ellipse 80% 60% at 50% 50%, ${gradeColor}10, transparent 70%)`,
-              border: `1px solid ${gradeColor}20`,
-            }}
-          />
-          <p className="relative text-[10px] sm:text-xs text-white/40 uppercase tracking-[0.3em] mb-2 font-[family-name:var(--font-avenue-mono)]">
-            Rank
-          </p>
-          <p
-            className="relative text-7xl sm:text-9xl font-black font-[family-name:var(--font-roobert)]"
-            style={{
-              color: gradeColor,
-              textShadow: gradeGlow,
-            }}
-          >
-            {finalScore.letterGrade}
-          </p>
-        </div>
-
-        {/* Score — big monospace number */}
-        <div className="text-center mb-4 sm:mb-6">
-          <p
-            className="text-3xl sm:text-4xl font-bold font-[family-name:var(--font-avenue-mono)] tabular-nums"
-            style={{
-              textShadow: "0 0 15px rgba(182,255,0,0.3)",
-            }}
-          >
-            {finalScore.totalScore.toLocaleString()}
-          </p>
-          <p className="text-[10px] sm:text-xs text-white/30 mt-1 font-[family-name:var(--font-avenue-mono)]">
-            / {MAX_SCORE.toLocaleString()}
-          </p>
-          {personalBest && (
-            <p
-              className={`mt-2 text-[10px] uppercase tracking-[0.18em] font-[family-name:var(--font-avenue-mono)] ${
-                personalBest.isNew ? "text-[#A0E7AB]" : "text-white/30"
-              }`}
-            >
-              {personalBest.isNew
-                ? "New personal best"
-                : `Personal best ${personalBest.score.toLocaleString()}`}
-            </p>
-          )}
-        </div>
-
-        {/* Stats Grid */}
-        <div className="w-full grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
-          <div className="retro-card p-3 text-center">
-            <p className="text-[10px] sm:text-xs text-white/30 uppercase font-[family-name:var(--font-avenue-mono)] tracking-wider">
-              Max Combo
-            </p>
-            <p className="text-lg sm:text-xl font-bold font-[family-name:var(--font-avenue-mono)]">
-              {finalScore.maxCombo}
+      <div className="relative z-20 mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-6 sm:py-10">
+        <div className="mb-4 flex items-center justify-between border-b border-[#3EB95F]/16 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-[#3EB95F] shadow-[0_0_10px_rgba(62,185,95,0.7)]" />
+            <p className="text-[9px] uppercase tracking-[0.26em] text-[#A0E7AB]/58 font-[family-name:var(--font-avenue-mono)]">
+              Block processing complete
             </p>
           </div>
-          <div className="retro-card p-3 text-center">
-            <p className="text-[10px] sm:text-xs text-white/30 uppercase font-[family-name:var(--font-avenue-mono)] tracking-wider">
-              Accuracy
-            </p>
-            <p className="text-lg sm:text-xl font-bold font-[family-name:var(--font-avenue-mono)]">
-              {accuracy}%
-            </p>
-          </div>
+          <p className="text-[9px] text-white/28 font-[family-name:var(--font-avenue-mono)]">
+            ABSTRACT / #{finalScore.blockNumber}
+          </p>
         </div>
 
-        {/* Grade Breakdown */}
-        <div className="w-full grid grid-cols-4 gap-1.5 sm:gap-2 mb-5 sm:mb-8">
-          {(["perfect", "great", "good", "miss"] as const).map((grade) => (
-            <div
-              key={grade}
-              className="text-center rounded-lg p-2 border"
-              style={{
-                borderColor: GRADE_COLORS[grade] + "20",
-                background: GRADE_COLORS[grade] + "08",
-              }}
-            >
-              <p
-                className="text-[10px] sm:text-xs font-bold uppercase font-[family-name:var(--font-avenue-mono)]"
-                style={{ color: GRADE_COLORS[grade] }}
-              >
-                {grade}
-              </p>
-              <p className="text-base sm:text-lg font-bold font-[family-name:var(--font-avenue-mono)]">
-                {finalScore.gradeCounts[grade]}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Block info */}
-        <p className="text-center text-[10px] text-white/25 mb-4 sm:mb-6 font-[family-name:var(--font-avenue-mono)] tracking-wider">
-          Block #{finalScore.blockNumber} | {finalScore.totalNotes} notes
-        </p>
-
-        {/* Error display */}
-        {displayError && (
-          <div className="w-full mb-3 sm:mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-            <p className="text-sm text-red-400">{displayError}</p>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="w-full flex flex-col gap-3">
-          {address && !isAgentRun && !receipt && (
-            <button
-              onClick={handleSubmitScore}
-              disabled={isBusy || !validation.valid}
-              className="neon-btn w-full h-12 sm:h-14 rounded-full bg-gradient-to-r from-[#3EB95F] to-[#73C98C] text-black font-bold text-sm hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-roobert)]"
-              style={{
-                boxShadow: "0 0 20px rgba(182,255,0,0.2)",
-              }}
-            >
-              {sessionStatus === "submitting"
-                ? "Submitting..."
-                : txHash && !receipt
-                  ? "Confirming..."
-                  : !validation.valid
-                    ? "Score Invalid"
-                    : "Submit Score (Gas-Free)"}
-            </button>
-          )}
-
-          {isAgentRun && (
-            <div className="w-full rounded-lg border border-[#73C98C]/20 bg-[#73C98C]/5 px-3 py-2 text-center">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-[#A0E7AB]/70 font-[family-name:var(--font-avenue-mono)]">
-                Agent demo · score not eligible for submission
-              </p>
-            </div>
-          )}
-
-          {submissionError && !isBusy && (
-            <button
-              onClick={() => {
-                resetSession();
-                setSubmissionError(null);
-              }}
-              className="w-full h-12 rounded-full border border-red-500/30 text-red-400 text-sm hover:bg-red-500/10 active:bg-red-500/20 transition-colors font-[family-name:var(--font-roobert)]"
-            >
-              Try Again
-            </button>
-          )}
-
-          {receipt && (
-            <div
-              className="text-center p-3 rounded-lg border"
-              style={{
-                background: "rgba(182,255,0,0.05)",
-                borderColor: "rgba(182,255,0,0.2)",
-              }}
-            >
-              <p className="text-sm text-[#3EB95F] font-medium font-[family-name:var(--font-roobert)]">
-                Score submitted on-chain!
-              </p>
-              <a
-                href={abscanTxUrl(receipt.transactionHash)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-[#73C98C]/70 hover:text-[#73C98C] underline font-[family-name:var(--font-avenue-mono)]"
-              >
-                View on Abscan
-              </a>
-              {canShareDaily && (
-                <button
-                  onClick={shareDailyLead}
-                  className="mt-3 w-full h-10 rounded-full border border-[#3EB95F]/30 text-[#3EB95F] text-xs uppercase tracking-wider hover:bg-[#3EB95F]/10"
+        <div className="grid gap-4 md:grid-cols-[1.05fr_0.95fr]">
+          <section className="block-surface p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-5">
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-[family-name:var(--font-avenue-mono)]">
+                  Finalized candidate
+                </p>
+                <h1 className="mt-2 text-3xl font-black font-[family-name:var(--font-roobert)]">
+                  Block sealed.
+                </h1>
+                <p className="mt-2 text-xs text-white/36 font-[family-name:var(--font-avenue-mono)]">
+                  {includedPackets}/{finalScore.totalNotes} packets included
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-[8px] uppercase tracking-[0.18em] text-white/25 font-[family-name:var(--font-avenue-mono)]">
+                  Rank
+                </p>
+                <p
+                  className="text-6xl font-black leading-none font-[family-name:var(--font-roobert)]"
+                  style={{ color: gradeColor, textShadow: gradeGlow }}
                 >
-                  Share #1 Daily Run
-                </button>
+                  {finalScore.letterGrade}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-8 gap-1 rounded-md border border-white/8 bg-black/40 p-3">
+              {Array.from({ length: 32 }, (_, i) => {
+                const colors = ["#2f7f6a", "#3EB95F", "#f2c94c", "#ff6b5f"];
+                const color = colors[(i + finalScore.blockNumber) % colors.length];
+                return (
+                  <span
+                    key={i}
+                    className="h-4 rounded-[2px] border"
+                    style={{
+                      borderColor:
+                        i < filledCells ? `${color}99` : "rgba(255,255,255,0.07)",
+                      background:
+                        i < filledCells ? `${color}88` : "rgba(255,255,255,0.025)",
+                      boxShadow:
+                        i < filledCells ? `0 0 8px ${color}18` : undefined,
+                    }}
+                  />
+                );
+              })}
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-md border border-white/8 bg-white/8">
+              {[
+                { label: "Inclusion", value: `${accuracy}%` },
+                { label: "Peak flow", value: finalScore.maxCombo.toString() },
+                {
+                  label: "Source tx",
+                  value: (chart?.transactionCount ?? finalScore.totalNotes).toLocaleString(),
+                },
+              ].map((item) => (
+                <div key={item.label} className="bg-[#050b08] px-2 py-3 text-center">
+                  <p className="text-[8px] uppercase tracking-wider text-white/25 font-[family-name:var(--font-avenue-mono)]">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-white/76 font-[family-name:var(--font-avenue-mono)]">
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 space-y-1 border-t border-white/8 pt-3 text-[9px] font-[family-name:var(--font-avenue-mono)]">
+              <div className="flex justify-between gap-3">
+                <span className="uppercase tracking-wider text-white/24">Block hash</span>
+                <span className="truncate text-white/42">
+                  {chart
+                    ? `${chart.blockHash.slice(0, 12)}…${chart.blockHash.slice(-8)}`
+                    : "source verified"}
+                </span>
+              </div>
+              {chart && (
+                <div className="flex justify-between gap-3">
+                  <span className="uppercase tracking-wider text-white/24">Gas processed</span>
+                  <span className="text-white/42">
+                    {(chart.gasUsed / 1e6).toFixed(2)}M
+                  </span>
+                </div>
               )}
             </div>
-          )}
+          </section>
 
-          <button
-            onClick={onPlayAgain}
-            className="neon-btn w-full h-12 rounded-full border border-[#3EB95F]/20 text-[#3EB95F]/80 font-bold text-sm hover:bg-[#3EB95F]/5 hover:border-[#3EB95F]/30 active:scale-[0.98] transition-all font-[family-name:var(--font-roobert)]"
-          >
-            Instant Rematch
-          </button>
+          <section className="block-surface flex flex-col p-5 sm:p-6">
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-[family-name:var(--font-avenue-mono)]">
+                Sequencer score
+              </p>
+              <p className="mt-2 text-3xl sm:text-4xl font-bold tabular-nums font-[family-name:var(--font-avenue-mono)]">
+                {finalScore.totalScore.toLocaleString()}
+              </p>
+              <p className="mt-1 text-[9px] text-white/24 font-[family-name:var(--font-avenue-mono)]">
+                / {MAX_SCORE.toLocaleString()} MAX EFFICIENCY
+              </p>
+              {personalBest && (
+                <p
+                  className={`mt-2 text-[9px] uppercase tracking-[0.18em] font-[family-name:var(--font-avenue-mono)] ${
+                    personalBest.isNew ? "text-[#A0E7AB]" : "text-white/28"
+                  }`}
+                >
+                  {personalBest.isNew
+                    ? "New personal best"
+                    : `Personal best ${personalBest.score.toLocaleString()}`}
+                </p>
+              )}
+            </div>
 
-          <button
-            onClick={() => router.push("/")}
-            className="w-full h-12 text-white/40 text-sm hover:text-white/70 active:text-white transition-colors font-[family-name:var(--font-roobert)]"
-          >
-            Home
-          </button>
+            <div className="my-5 grid grid-cols-4 gap-1.5">
+              {(
+                [
+                  ["perfect", "sealed"],
+                  ["great", "valid"],
+                  ["good", "late"],
+                  ["miss", "returned"],
+                ] as const
+              ).map(([grade, label]) => (
+                <div
+                  key={grade}
+                  className="rounded-[4px] border px-1 py-2 text-center"
+                  style={{
+                    borderColor: GRADE_COLORS[grade] + "22",
+                    background: GRADE_COLORS[grade] + "07",
+                  }}
+                >
+                  <p
+                    className="text-[7px] font-bold uppercase font-[family-name:var(--font-avenue-mono)]"
+                    style={{ color: GRADE_COLORS[grade] }}
+                  >
+                    {label}
+                  </p>
+                  <p className="mt-1 text-base font-bold font-[family-name:var(--font-avenue-mono)]">
+                    {finalScore.gradeCounts[grade]}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {displayError && (
+              <div className="mb-3 rounded-md border border-red-500/20 bg-red-500/8 p-3">
+                <p className="text-xs text-red-400">{displayError}</p>
+              </div>
+            )}
+
+            <div className="mt-auto flex flex-col gap-2.5">
+              {address && !isAgentRun && !receipt && (
+                <button
+                  onClick={handleSubmitScore}
+                  disabled={isBusy || !validation.valid}
+                  className="processing-btn h-12 w-full rounded-md bg-[#A0E7AB] text-sm font-bold text-[#031006] transition-all hover:bg-[#b9f2c2] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45 font-[family-name:var(--font-roobert)]"
+                >
+                  {sessionStatus === "submitting"
+                    ? "Publishing score..."
+                    : txHash && !receipt
+                      ? "Confirming..."
+                      : !validation.valid
+                        ? "Score invalid"
+                        : "Publish score · gas-free"}
+                </button>
+              )}
+
+              {isAgentRun && (
+                <div className="w-full rounded-md border border-[#73C98C]/18 bg-[#73C98C]/5 px-3 py-2 text-center">
+                  <p className="text-[9px] uppercase tracking-[0.16em] text-[#A0E7AB]/60 font-[family-name:var(--font-avenue-mono)]">
+                    Autonomous run · not leaderboard eligible
+                  </p>
+                </div>
+              )}
+
+              {submissionError && !isBusy && (
+                <button
+                  onClick={() => {
+                    resetSession();
+                    setSubmissionError(null);
+                  }}
+                  className="h-11 w-full rounded-md border border-red-500/25 text-sm text-red-400 hover:bg-red-500/8 font-[family-name:var(--font-roobert)]"
+                >
+                  Retry publication
+                </button>
+              )}
+
+              {receipt && (
+                <div className="rounded-md border border-[#3EB95F]/20 bg-[#3EB95F]/5 p-3 text-center">
+                  <p className="text-sm font-medium text-[#A0E7AB] font-[family-name:var(--font-roobert)]">
+                    Score published onchain
+                  </p>
+                  <a
+                    href={abscanTxUrl(receipt.transactionHash)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-[#73C98C]/70 underline hover:text-[#73C98C] font-[family-name:var(--font-avenue-mono)]"
+                  >
+                    View receipt on Abscan
+                  </a>
+                  {canShareDaily && (
+                    <button
+                      onClick={shareDailyLead}
+                      className="mt-3 h-10 w-full rounded-md border border-[#3EB95F]/30 text-[10px] uppercase tracking-wider text-[#3EB95F] hover:bg-[#3EB95F]/10"
+                    >
+                      Share #1 daily run
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <button
+                onClick={onPlayAgain}
+                className="h-12 w-full rounded-md border border-[#3EB95F]/25 text-sm font-bold text-[#A0E7AB]/80 transition-all hover:border-[#3EB95F]/40 hover:bg-[#3EB95F]/6 active:scale-[0.99] font-[family-name:var(--font-roobert)]"
+              >
+                Rebuild this block
+              </button>
+
+              <button
+                onClick={() => router.push("/")}
+                className="h-10 w-full text-sm text-white/36 transition-colors hover:text-white/65 font-[family-name:var(--font-roobert)]"
+              >
+                Return to block explorer
+              </button>
+            </div>
+          </section>
         </div>
 
-        {/* Keyboard shortcuts */}
-        <div className="hidden sm:flex justify-center gap-4 mt-3 text-[10px] text-white/20 font-[family-name:var(--font-avenue-mono)]">
-          <span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 text-white/30 border border-white/10">
-              R
-            </kbd>{" "}
-            Replay
-          </span>
-          <span>
-            <kbd className="px-1 py-0.5 rounded bg-white/5 text-white/30 border border-white/10">
-              Esc
-            </kbd>{" "}
-            Home
-          </span>
+        <div className="mt-3 hidden justify-center gap-4 text-[9px] text-white/18 sm:flex font-[family-name:var(--font-avenue-mono)]">
+          <span><kbd>R</kbd> rebuild</span>
+          <span><kbd>Esc</kbd> explorer</span>
         </div>
       </div>
     </div>

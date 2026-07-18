@@ -36,25 +36,28 @@ export function DailyChallengeCard() {
   }, []);
 
   return (
-    <div className="w-full max-w-md mx-auto mb-6">
-      <div className="retro-card p-5 border border-[#3EB95F]/20">
+    <div className="w-full">
+      <div className="block-surface p-5">
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-[0.2em] text-[#3EB95F]/70 font-[family-name:var(--font-avenue-mono)]">
-            Daily Beat Challenge · {getTodayChallengeSeed()}
+            Daily block build · {getTodayChallengeSeed()}
           </p>
           <span className="text-[10px] text-white/45 font-[family-name:var(--font-avenue-mono)]" suppressHydrationWarning>
             resets in {mounted ? timeLeft : "--:--:--"}
           </span>
         </div>
         <p className="text-sm text-white/80 mb-3 font-[family-name:var(--font-roobert)]">
-          {blockNumber ? `Today’s block is #${blockNumber.toString()}` : "Picking today’s block..."}
+          {blockNumber ? `Everyone processes block #${blockNumber.toString()}` : "Selecting today’s block..."}
+        </p>
+        <p className="mb-4 text-[10px] leading-relaxed text-white/32 font-[family-name:var(--font-avenue-mono)]">
+          One shared transaction queue. One daily leaderboard.
         </p>
         <button
           disabled={!blockNumber}
           onClick={() => blockNumber && router.push(`/play/${blockNumber}`)}
-          className="neon-btn w-full h-11 rounded-lg bg-gradient-to-r from-[#3EB95F] to-[#73C98C] text-black font-bold text-sm disabled:opacity-40"
+          className="processing-btn w-full h-11 rounded-md bg-[#A0E7AB] text-[#031006] font-bold text-sm disabled:opacity-40"
         >
-          Play Daily Challenge
+          Process daily block
         </button>
       </div>
     </div>

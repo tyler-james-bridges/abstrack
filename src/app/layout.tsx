@@ -7,8 +7,9 @@ import "./globals.css";
 
 
 export const metadata: Metadata = {
-  title: "ABSTRACK | Blockchain Rhythm Game",
-  description: "A rhythm game where every blockchain block creates a unique beat. Play, score, and compete on Abstract.",
+  title: "ABSTRACK | Build Blocks on Beat",
+  description:
+    "Process real Abstract block activity as a rhythm game. Route transactions, build throughput, and publish your sequencer score onchain.",
 };
 
 export const viewport: Viewport = {

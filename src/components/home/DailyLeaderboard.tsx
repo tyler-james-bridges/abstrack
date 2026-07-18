@@ -59,11 +59,11 @@ export function DailyLeaderboard() {
   }, []);
 
   return (
-    <div className="w-full max-w-md mx-auto mt-6">
-      <div className="retro-card p-6">
+    <div className="w-full">
+      <div className="block-surface p-5 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xs font-bold font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#3EB95F]/70 retro-header">
-            Daily Leaderboard {block ? `#${block}` : ""}
+            Daily sequencers {block ? `· #${block}` : ""}
           </h2>
           <button
             onClick={shareDaily}
@@ -74,7 +74,7 @@ export function DailyLeaderboard() {
           </button>
         </div>
         {rows.length === 0 ? (
-          <p className="text-sm text-white/30">No daily scores yet. Be first.</p>
+          <p className="text-sm text-white/30">No finalized runs yet. Be first.</p>
         ) : (
           <div className="space-y-1.5">
             {rows.map((r, i) => (

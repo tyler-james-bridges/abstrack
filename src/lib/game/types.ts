@@ -4,6 +4,8 @@ export type TimingGrade = "perfect" | "great" | "good" | "miss";
 
 export type GamePhase = "loading" | "countdown" | "playing" | "paused" | "finished";
 
+export type TransactionPriority = 0 | 1 | 2 | 3;
+
 export interface Note {
   id: number;
   lane: Lane;
@@ -19,6 +21,12 @@ export interface Note {
   hitTime?: number;
   /** Scroll speed in px/s (varies with progressive difficulty) */
   noteSpeed: number;
+  /** Deterministic visual weight for the transaction packet (0-1). */
+  packetWeight: number;
+  /** Deterministic fee-priority band used by the block-builder presentation. */
+  priority: TransactionPriority;
+  /** Source transaction hash, or the block hash for empty blocks. */
+  txHash: string;
 }
 
 export type ArpPattern = "ascending" | "descending" | "pendulum" | "random";
@@ -39,6 +47,9 @@ export interface SongParams {
 export interface BeatChart {
   blockNumber: number;
   blockHash: string;
+  /** Source block activity exposed to the sequencer HUD. */
+  transactionCount: number;
+  gasUsed: number;
   bpm: number;
   /** Total duration in seconds */
   duration: number;

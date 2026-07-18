@@ -54,10 +54,10 @@ export function PlayerBestScores() {
 
   if (loading) {
     return (
-      <div className="w-full max-w-md mx-auto mt-6">
-        <div className="retro-card p-6">
+      <div className="w-full">
+        <div className="block-surface p-5 sm:p-6">
           <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#3EB95F]/70 retro-header">
-            Your Scores
+            Your sealed scores
           </h2>
           <div className="flex items-center justify-center py-6">
             <div className="w-5 h-5 border-2 border-[#73C98C]/20 border-t-[#73C98C]/60 rounded-full animate-spin" />
@@ -69,13 +69,13 @@ export function PlayerBestScores() {
 
   if (scores.length === 0) {
     return (
-      <div className="w-full max-w-md mx-auto mt-6">
-        <div className="retro-card p-6">
+      <div className="w-full">
+        <div className="block-surface p-5 sm:p-6">
           <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#3EB95F]/70 retro-header">
-            Your Scores
+            Your sealed scores
           </h2>
           <p className="text-sm text-white/30 text-center py-4 font-[family-name:var(--font-avenue-mono)]">
-            No scores yet. Play a block to get started!
+            No published runs yet. Process a block to get started.
           </p>
         </div>
       </div>
@@ -83,10 +83,10 @@ export function PlayerBestScores() {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto mt-6">
-      <div className="retro-card p-6">
+    <div className="w-full">
+      <div className="block-surface p-5 sm:p-6">
         <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#3EB95F]/70 retro-header">
-          Your Scores
+          Your sealed scores
         </h2>
         <div className="space-y-1.5 max-h-60 overflow-y-auto">
           {scores.map((entry) => (

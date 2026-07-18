@@ -55,7 +55,7 @@ export default function PlayPage({ params }: PlayPageProps) {
   );
   const [finalScore, setFinalScore] = useState<FinalScore | null>(null);
   const [countdown, setCountdown] = useState(0);
-  const [loadingStatus, setLoadingStatus] = useState("Fetching block data...");
+  const [loadingStatus, setLoadingStatus] = useState("Syncing block header...");
   const [error, setError] = useState<string | null>(null);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [readyToStart, setReadyToStart] = useState(false);
@@ -87,16 +87,16 @@ export default function PlayPage({ params }: PlayPageProps) {
       setGameState(createInitialGameState());
       setReadyToStart(false);
       setShowHowToPlay(false);
-      setLoadingStatus("Fetching block data...");
+      setLoadingStatus("Syncing block header...");
 
       const blockData = await getBlockForGame(blockNumber);
       // Bail if a newer startGame call has taken over
       if (epochRef.current !== epoch) return;
-      setLoadingStatus("Generating beat chart...");
+      setLoadingStatus("Indexing transaction queue...");
 
       const generatedChart = generateBeatChart(blockData);
       setChart(generatedChart);
-      setLoadingStatus("Initializing audio...");
+      setLoadingStatus("Booting sequencer audio...");
 
       const engine = new GameEngine();
       engineRef.current = engine;
@@ -148,7 +148,7 @@ export default function PlayPage({ params }: PlayPageProps) {
         if (epochRef.current !== epoch) return;
         await engine.load(generatedChart, containerRef.current ?? undefined);
       };
-      setLoadingStatus("Block ready");
+      setLoadingStatus("Mempool snapshot ready");
       setReadyToStart(true);
       setShowHowToPlay(needsTutorial);
     } catch (err) {
@@ -178,7 +178,7 @@ export default function PlayPage({ params }: PlayPageProps) {
     pendingLoadRef.current = null;
     setReadyToStart(false);
     setShowHowToPlay(false);
-    setLoadingStatus("Tuning the block...");
+    setLoadingStatus("Opening transaction flow...");
 
     try {
       await loadEngine();
@@ -273,23 +273,31 @@ export default function PlayPage({ params }: PlayPageProps) {
         <div className="absolute inset-0 z-40">
           <GameOverScreen
             finalScore={finalScore}
+            chart={chart ?? undefined}
             onPlayAgain={handlePlayAgain}
             isAgentRun={botEnabled}
           />
         </div>
       )}
 
-      {/* Game canvas and HUD — always mounted when chart exists */}
-      {chart && (
+      {/* Game canvas stays mounted through setup/play, then yields to receipt UI. */}
+      {chart && phase !== "finished" && (
         <>
           <GameCanvas
             chart={chart}
             getCurrentTime={getCurrentTime}
             isPlaying={phase === "playing" || phase === "countdown"}
           />
-          {/* CRT scanline overlay on game canvas */}
+          {/* Subtle data-line texture over the canvas */}
           <div className="absolute inset-0 crt-scanlines z-[5]" />
-          <GameHUD state={gameState} onVolumeChange={handleVolumeChange} />
+          {(phase === "countdown" ||
+            phase === "playing" ||
+            phase === "paused") && (
+            <GameHUD
+              state={gameState}
+              onVolumeChange={handleVolumeChange}
+            />
+          )}
         </>
       )}
 
@@ -305,7 +313,7 @@ export default function PlayPage({ params }: PlayPageProps) {
             left: "4px",
           }}
         >
-          &larr; Back
+          &larr; Explorer
         </Link>
       )}
 
@@ -315,7 +323,7 @@ export default function PlayPage({ params }: PlayPageProps) {
           style={{ top: "calc(env(safe-area-inset-top, 0px) + 88px)" }}
           data-game-ui
         >
-          Agent Mode · {botProfile}
+          Autonomous sequencer · {botProfile}
         </div>
       )}
 
@@ -324,7 +332,7 @@ export default function PlayPage({ params }: PlayPageProps) {
         <div className="absolute inset-0 z-30 pointer-events-none" data-game-ui>
           <div className="absolute top-[17%] left-1/2 -translate-x-1/2 text-center">
             <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.35em] text-[#A0E7AB]/60 font-[family-name:var(--font-avenue-mono)]">
-              Get ready
+              Sequencer online in
             </p>
             <p
               key={countdown}

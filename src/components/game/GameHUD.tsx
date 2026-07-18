@@ -35,9 +35,14 @@ function getComboMultiplier(combo: number): number {
 }
 
 export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
-  const { score, combo, chart, elapsedTime } = state;
+  const { score, combo, chart, elapsedTime, gradeCounts } = state;
   const progress = chart
     ? Math.max(0, Math.min(elapsedTime / chart.duration, 1))
+    : 0;
+  const processed =
+    gradeCounts.perfect + gradeCounts.great + gradeCounts.good;
+  const inclusion = chart && chart.notes.length > 0
+    ? Math.max(0, Math.min(processed / chart.notes.length, 1))
     : 0;
   const multiplier = getComboMultiplier(combo);
   const nextTier = [...COMBO_MULTIPLIER_TIERS]
@@ -85,49 +90,69 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10">
-      {/* Progress bar — neon glow */}
+      {/* Block-time rail */}
       <div
-        className="absolute top-0 left-0 right-0 h-[2px] bg-white/5"
+        className="absolute top-0 left-0 right-0 h-[3px] bg-white/[0.04]"
         style={{ marginTop: "env(safe-area-inset-top, 0px)" }}
       >
         <div
           className="h-full transition-all duration-100"
           style={{
             width: `${progress * 100}%`,
-            background: "linear-gradient(90deg, #3EB95F, #73C98C)",
-            boxShadow: "0 0 8px rgba(182,255,0,0.4), 0 1px 4px rgba(182,255,0,0.2)",
+            background:
+              "linear-gradient(90deg, #2f7f6a, #3EB95F 58%, #f2c94c)",
+            boxShadow: "0 0 10px rgba(62,185,95,0.35)",
           }}
         />
       </div>
 
-      {/* Score card */}
+      {/* Network identity */}
+      {chart && (
+        <div
+          className="absolute left-16 hidden sm:block border-l border-[#3EB95F]/35 pl-3 font-[family-name:var(--font-avenue-mono)]"
+          style={{
+            top: "calc(env(safe-area-inset-top, 0px) + 14px)",
+          }}
+        >
+          <p className="text-[9px] uppercase tracking-[0.22em] text-[#A0E7AB]/45">
+            Abstract mainnet · processing
+          </p>
+          <p className="mt-1 text-xs font-bold text-white/70">
+            BLOCK #{chart.blockNumber}
+          </p>
+          <p className="mt-0.5 text-[9px] text-white/30">
+            {(chart.gasUsed / 1e6).toFixed(2)}M GAS · {chart.bpm} BPM
+          </p>
+        </div>
+      )}
+
+      {/* Score / throughput cluster */}
       <div
-        className="absolute right-3 sm:right-4 text-right rounded-xl border border-[#73C98C]/20 bg-black/55 px-3 py-2 backdrop-blur-sm"
+        className="absolute right-3 sm:right-4 min-w-[124px] text-right rounded-md border border-[#73C98C]/18 bg-[#030805]/80 px-3 py-2 backdrop-blur-md"
         style={{
           top: "calc(env(safe-area-inset-top, 0px) + 10px)",
-          boxShadow: "0 0 16px rgba(62,185,95,0.10)",
+          boxShadow:
+            "0 12px 34px rgba(0,0,0,0.34), inset 3px 0 0 rgba(62,185,95,0.35)",
         }}
       >
+        <p className="text-[8px] uppercase tracking-[0.18em] text-white/30 font-[family-name:var(--font-avenue-mono)]">
+          Sequencer score
+        </p>
         <p
-          className="text-lg sm:text-3xl font-bold text-white font-[family-name:var(--font-avenue-mono)] tabular-nums leading-tight"
+          className="mt-0.5 text-lg sm:text-2xl font-bold text-white font-[family-name:var(--font-avenue-mono)] tabular-nums leading-tight"
           style={{
             textShadow: "0 0 8px rgba(62,185,95,0.22)",
           }}
         >
           {score.toLocaleString()}
         </p>
-        {chart && (
-          <p className="text-[10px] sm:text-xs text-white/45 mt-0.5 font-[family-name:var(--font-avenue-mono)] tracking-wider">
-            {chart.bpm} BPM · #{chart.blockNumber}
-          </p>
-        )}
         {combo > 0 && (
-          <div className="mt-2 flex items-center justify-end gap-2 border-t border-white/10 pt-1.5 font-[family-name:var(--font-avenue-mono)]">
-            <span className="text-[10px] uppercase tracking-wider text-white/50">
-              {combo} combo
+          <div className="mt-1.5 flex items-center justify-end gap-1.5 border-t border-white/8 pt-1.5 font-[family-name:var(--font-avenue-mono)]">
+            <span className="text-[9px] uppercase tracking-wider text-white/45">
+              {combo} throughput
             </span>
             <span
-              className="rounded px-1.5 py-0.5 text-[10px] font-bold"
+              className="rounded-sm px-1.5 py-0.5 text-[9px] font-bold"
               style={{
                 color: multiplier > 1 ? "#ffd700" : "#A0E7AB",
                 background:
@@ -139,13 +164,54 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
               ×{multiplier}
             </span>
             {nextTier && (
-              <span className="hidden sm:inline text-[9px] text-white/25">
+              <span className="hidden md:inline text-[8px] text-white/22">
                 ×{nextTier.multiplier} in {nextTier.threshold - combo}
               </span>
             )}
           </div>
         )}
       </div>
+
+      {/* Live block assembly status */}
+      {chart && (
+        <div
+          className="absolute left-3 right-3 sm:left-1/2 sm:right-auto sm:w-[360px] sm:-translate-x-1/2"
+          style={{
+            top: "calc(env(safe-area-inset-top, 0px) + 66px)",
+          }}
+        >
+          <div className="flex items-center justify-between text-[8px] uppercase tracking-[0.16em] font-[family-name:var(--font-avenue-mono)]">
+            <span className="text-[#A0E7AB]/48">
+              Block assembly
+            </span>
+            <span className="text-white/36 tabular-nums">
+              {processed}/{chart.notes.length} packets
+            </span>
+          </div>
+          <div className="relative mt-1 h-[5px] overflow-hidden rounded-[2px] border border-white/8 bg-black/55">
+            <div
+              className="absolute inset-y-0 left-0 transition-all duration-100"
+              style={{
+                width: `${progress * 100}%`,
+                background: "rgba(255,255,255,0.055)",
+              }}
+            />
+            <div
+              className="absolute inset-y-0 left-0 transition-all duration-150"
+              style={{
+                width: `${inclusion * 100}%`,
+                background:
+                  "linear-gradient(90deg, #2f7f6a, #3EB95F, #A0E7AB)",
+                boxShadow: "0 0 8px rgba(62,185,95,0.38)",
+              }}
+            />
+            <div
+              className="absolute inset-y-0 w-px bg-[#f2c94c]/80"
+              style={{ left: `${progress * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Volume control */}
       <div
@@ -158,17 +224,17 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
         <div className="flex items-center">
           <button
             onClick={() => setShowVolumeSlider((v) => !v)}
-            className="flex items-center justify-center w-11 h-11 text-white/40 hover:text-[#3EB95F] active:text-[#3EB95F] transition-colors rounded-lg"
+            className="flex items-center justify-center w-11 h-11 text-white/35 hover:text-[#3EB95F] active:text-[#3EB95F] transition-colors rounded-md"
             aria-label="Toggle volume"
           >
             {volumeIcon}
           </button>
           {showVolumeSlider && (
             <div
-              className="flex items-center gap-2 rounded-full px-3 py-2"
+              className="flex items-center gap-2 rounded-md px-3 py-2"
               style={{
-                background: "rgba(0,0,0,0.8)",
-                border: "1px solid rgba(182,255,0,0.15)",
+                background: "rgba(3,8,5,0.92)",
+                border: "1px solid rgba(62,185,95,0.18)",
                 backdropFilter: "blur(8px)",
               }}
             >

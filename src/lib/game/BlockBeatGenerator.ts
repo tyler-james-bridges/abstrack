@@ -1,4 +1,10 @@
-import type { BeatChart, Note, Lane, ArpPattern } from "./types";
+import type {
+  BeatChart,
+  Note,
+  Lane,
+  ArpPattern,
+  TransactionPriority,
+} from "./types";
 import type { BlockData } from "../chain/blockData";
 import {
   MIN_BPM,
@@ -132,6 +138,9 @@ export function generateBeatChart(block: BlockData): BeatChart {
         duration: 0,
         hit: false,
         noteSpeed: diff.noteSpeed,
+        packetWeight: 0,
+        priority: 0,
+        txHash: block.hash,
       });
 
       // Chord chance increases with difficulty
@@ -145,6 +154,9 @@ export function generateBeatChart(block: BlockData): BeatChart {
             duration: 0,
             hit: false,
             noteSpeed: diff.noteSpeed,
+            packetWeight: 0,
+            priority: 0,
+            txHash: block.hash,
           });
         }
       }
@@ -153,6 +165,29 @@ export function generateBeatChart(block: BlockData): BeatChart {
 
   // Sort notes by time, then by lane
   notes.sort((a, b) => a.time - b.time || a.lane - b.lane);
+
+  // Attach deterministic transaction presentation data after chart generation.
+  // We intentionally keep this local: fetching full transaction objects would
+  // make the rhythm-game boot path slower and more RPC intensive.
+  for (const note of notes) {
+    const txHash =
+      block.transactions.length > 0
+        ? block.transactions[note.id % block.transactions.length]
+        : block.hash;
+    const byteOffset = 2 + ((note.id * 2) % Math.max(2, txHash.length - 4));
+    const hashByte = Number.parseInt(
+      txHash.slice(byteOffset, byteOffset + 2),
+      16
+    );
+    const normalizedByte = Number.isFinite(hashByte) ? hashByte / 255 : rand();
+
+    note.txHash = txHash;
+    note.packetWeight = 0.42 + normalizedByte * 0.58;
+    note.priority = Math.min(
+      3,
+      Math.floor(normalizedByte * 4)
+    ) as TransactionPriority;
+  }
 
   const gasNorm = Math.min(Number(block.gasUsed) / 20_000_000, 1);
 
@@ -170,6 +205,8 @@ export function generateBeatChart(block: BlockData): BeatChart {
   return {
     blockNumber: Number(block.number),
     blockHash: block.hash,
+    transactionCount: txCount,
+    gasUsed: Number(block.gasUsed),
     bpm,
     duration,
     notes,

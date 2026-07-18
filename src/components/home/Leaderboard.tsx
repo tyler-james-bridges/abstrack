@@ -62,10 +62,10 @@ export function Leaderboard() {
 
   if (loading) {
     return (
-      <div className="w-full max-w-md mx-auto mt-6">
-        <div className="retro-card p-6">
+      <div className="w-full">
+        <div className="block-surface p-5 sm:p-6">
           <h2 className="text-xs font-bold mb-4 font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#ffd700]/70 retro-header">
-            High Scores
+            Global sequencers
           </h2>
           <div className="flex items-center justify-center py-8">
             <div className="w-5 h-5 border-2 border-[#ffd700]/20 border-t-[#ffd700]/60 rounded-full animate-spin" />
@@ -77,11 +77,11 @@ export function Leaderboard() {
 
   if (scores.length === 0) {
     return (
-      <div className="w-full max-w-md mx-auto mt-6">
-        <div className="retro-card p-6">
+      <div className="w-full">
+        <div className="block-surface p-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs font-bold font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#ffd700]/70 retro-header">
-              High Scores
+              Global sequencers
             </h2>
             <button
               onClick={handleRefresh}
@@ -99,7 +99,7 @@ export function Leaderboard() {
             </button>
           </div>
           <p className="text-sm text-white/30 text-center py-4 font-[family-name:var(--font-avenue-mono)]">
-            No scores yet. Be the first!
+            No published runs yet. Be the first.
           </p>
         </div>
       </div>
@@ -107,11 +107,11 @@ export function Leaderboard() {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto mt-6">
-      <div className="retro-card p-6">
+    <div className="w-full">
+      <div className="block-surface p-5 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xs font-bold font-[family-name:var(--font-avenue-mono)] tracking-[0.2em] uppercase text-[#ffd700]/70 retro-header">
-            High Scores
+            Global sequencers
           </h2>
           <button
             onClick={handleRefresh}
