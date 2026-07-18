@@ -15,6 +15,7 @@ import { pickDailyChallengeBlock } from "@/lib/game/dailyChallenge";
 interface GameOverScreenProps {
   finalScore: FinalScore;
   onPlayAgain: () => void;
+  isAgentRun?: boolean;
 }
 
 const GRADE_GLOW: Record<string, string> = {
@@ -122,12 +123,17 @@ function parseSubmissionError(err: unknown): string {
 export function GameOverScreen({
   finalScore,
   onPlayAgain,
+  isAgentRun = false,
 }: GameOverScreenProps) {
   const router = useRouter();
   const { address } = useAccount();
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [canShareDaily, setCanShareDaily] = useState(false);
   const [dailyLeadText, setDailyLeadText] = useState<string | null>(null);
+  const [personalBest, setPersonalBest] = useState<{
+    score: number;
+    isNew: boolean;
+  } | null>(null);
   const autoShareAttemptedRef = useRef(false);
 
   const {
@@ -179,7 +185,7 @@ export function GameOverScreen({
   }, [handleKeyDown]);
 
   useEffect(() => {
-    if (!receipt || autoShareAttemptedRef.current) return;
+    if (isAgentRun || !receipt || autoShareAttemptedRef.current) return;
 
     const checkDailyLeadAndShare = async () => {
       try {
@@ -219,7 +225,22 @@ export function GameOverScreen({
     };
 
     checkDailyLeadAndShare();
-  }, [receipt, finalScore.blockNumber, finalScore.totalScore]);
+  }, [receipt, finalScore.blockNumber, finalScore.totalScore, isAgentRun]);
+
+  useEffect(() => {
+    if (isAgentRun || typeof window === "undefined") return;
+
+    const key = `abstrack-local-best:${finalScore.blockNumber}`;
+    const stored = Number.parseInt(localStorage.getItem(key) ?? "", 10);
+    const previous = Number.isFinite(stored) ? stored : null;
+    const isNew = previous === null || finalScore.totalScore > previous;
+    const best = isNew ? finalScore.totalScore : previous;
+
+    if (isNew) {
+      localStorage.setItem(key, String(finalScore.totalScore));
+    }
+    setPersonalBest({ score: best, isNew });
+  }, [finalScore.blockNumber, finalScore.totalScore, isAgentRun]);
 
   const validation = useMemo(
     () => validateScore(finalScore.totalScore, finalScore.blockNumber),
@@ -233,7 +254,7 @@ export function GameOverScreen({
   }, [validation, submissionError]);
 
   const handleSubmitScore = async () => {
-    if (!address) return;
+    if (isAgentRun || !address) return;
     if (!validation.valid) return;
 
     setSubmissionError(null);
@@ -295,6 +316,17 @@ export function GameOverScreen({
           <p className="text-[10px] sm:text-xs text-white/30 mt-1 font-[family-name:var(--font-avenue-mono)]">
             / {MAX_SCORE.toLocaleString()}
           </p>
+          {personalBest && (
+            <p
+              className={`mt-2 text-[10px] uppercase tracking-[0.18em] font-[family-name:var(--font-avenue-mono)] ${
+                personalBest.isNew ? "text-[#A0E7AB]" : "text-white/30"
+              }`}
+            >
+              {personalBest.isNew
+                ? "New personal best"
+                : `Personal best ${personalBest.score.toLocaleString()}`}
+            </p>
+          )}
         </div>
 
         {/* Stats Grid */}
@@ -355,7 +387,7 @@ export function GameOverScreen({
 
         {/* Actions */}
         <div className="w-full flex flex-col gap-3">
-          {address && !receipt && (
+          {address && !isAgentRun && !receipt && (
             <button
               onClick={handleSubmitScore}
               disabled={isBusy || !validation.valid}
@@ -372,6 +404,14 @@ export function GameOverScreen({
                     ? "Score Invalid"
                     : "Submit Score (Gas-Free)"}
             </button>
+          )}
+
+          {isAgentRun && (
+            <div className="w-full rounded-lg border border-[#73C98C]/20 bg-[#73C98C]/5 px-3 py-2 text-center">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-[#A0E7AB]/70 font-[family-name:var(--font-avenue-mono)]">
+                Agent demo · score not eligible for submission
+              </p>
+            </div>
           )}
 
           {submissionError && !isBusy && (
