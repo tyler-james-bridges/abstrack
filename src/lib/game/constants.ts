@@ -67,20 +67,46 @@ export const LANE_NAMES = [
   "EXPRESS",
 ] as const;
 
+// Mirrors --abstrack-lane-* in globals.css — canvas can't read CSS vars
+// cheaply, so these are kept in sync by hand. Bump both together.
 export const LANE_COLORS = [
-  "#2f7f6a", // low-fee teal
-  "#3EB95F", // Abstract green
-  "#f2c94c", // priority amber
-  "#ff6b5f", // congested coral
+  "oklch(0.76 0.15 40)", // ECONOMY
+  "oklch(0.76 0.15 95)", // STANDARD
+  "oklch(0.76 0.15 155)", // PRIORITY
+  "oklch(0.76 0.15 270)", // EXPRESS
 ] as const;
 
-// Grade colors
+// Mirrors --abstrack-perfect/great/good/miss in globals.css.
 export const GRADE_COLORS: Record<TimingGrade, string> = {
-  perfect: "#ffd700", // gold
-  great: "#3EB95F", // green
-  good: "#73C98C", // blue
-  miss: "#ff6b6b", // red
+  perfect: "oklch(0.76 0.15 270)",
+  great: "oklch(0.76 0.15 155)",
+  good: "oklch(0.76 0.15 95)",
+  miss: "oklch(0.62 0.19 25)",
 };
+
+/**
+ * Applies an alpha channel to one of the oklch(...) tokens above, e.g.
+ * withAlpha(LANE_COLORS[0], 0.5) -> "oklch(0.76 0.15 40 / 0.5)". Canvas
+ * fillStyle/strokeStyle can't take the hex-suffix alpha trick oklch
+ * strings don't support, so any lane/grade color that needs transparency
+ * on canvas should go through this.
+ */
+export function withAlpha(oklchColor: string, alpha: number): string {
+  return oklchColor.replace(/\)\s*$/, ` / ${alpha})`);
+}
+
+// Mirrors the stage tokens in globals.css (--background, --abstrack-panel,
+// etc). Canvas needs literal values, so keep these in sync by hand.
+export const STAGE_COLORS = {
+  background: "#0b0c0b",
+  panel: "#121311",
+  line: "#1d1e1a",
+  rule: "#33342d",
+  ghost: "#26271f",
+  foreground: "#edebe4",
+  dim: "#8d918a",
+  faint: "#5c605a",
+} as const;
 
 // Visual
 export const NOTE_SPEED = 400; // pixels per second

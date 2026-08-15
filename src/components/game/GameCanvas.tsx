@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useMemo } from "react";
 import type { BeatChart, TimingGrade } from "@/lib/game/types";
 import {
   LANE_COUNT,
@@ -9,9 +9,16 @@ import {
   LANE_NAMES,
   HIT_ZONE_Y,
   GRADE_COLORS,
+  STAGE_COLORS,
+  withAlpha,
   getCanvasPadding,
   getNoteSize,
 } from "@/lib/game/constants";
+import {
+  buildFingerprint,
+  paintFingerprint,
+  fingerprintRects,
+} from "@/lib/game/fingerprint";
 
 interface GameCanvasProps {
   chart: BeatChart;
@@ -23,6 +30,9 @@ const HIT_FLASH_DURATION = 280;
 const PACKET_TRANSFER_DURATION = 440;
 const GRADE_TEXT_DURATION = 620;
 const FADE_IN_ZONE = 0.24;
+const STRIP_HEIGHT = 22;
+const STRIP_HEIGHT_MOBILE = 14;
+const STRIP_GAP = 10;
 
 const GRADE_FEEDBACK: Record<Exclude<TimingGrade, "miss">, string> = {
   perfect: "SEALED",
@@ -60,6 +70,9 @@ export function GameCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
 
+  // The base fingerprint is pure and cheap — build it once per chart.
+  const baseFingerprint = useMemo(() => buildFingerprint(chart), [chart]);
+
   const draw = useCallback(
     (ctx: CanvasRenderingContext2D, width: number, height: number) => {
       const currentTime = getCurrentTime();
@@ -70,7 +83,8 @@ export function GameCanvas({
       const hitY = height * HIT_ZONE_Y;
       const isMobile = width < 500;
 
-      const topY = Math.max(isMobile ? 92 : 108, height * 0.16);
+      const stripHeight = isMobile ? STRIP_HEIGHT_MOBILE : STRIP_HEIGHT;
+      const topY = Math.max(isMobile ? 92 : 108, height * 0.16) + stripHeight + STRIP_GAP;
       const centerX = width / 2;
       const highwayBottomWidth = width - canvasPadding * 2;
       const highwayTopWidth = Math.max(
@@ -96,13 +110,32 @@ export function GameCanvas({
       const inclusionRatio =
         chart.notes.length > 0 ? processedCount / chart.notes.length : 0;
 
-      // Deep blockspace background.
-      const bg = ctx.createLinearGradient(0, 0, 0, height);
-      bg.addColorStop(0, "#07100c");
-      bg.addColorStop(0.44, "#050a08");
-      bg.addColorStop(1, "#020403");
-      ctx.fillStyle = bg;
+      // Deep, flat stage background — the fingerprint is the only thing
+      // that should emit colour here.
+      ctx.fillStyle = STAGE_COLORS.background;
       ctx.fillRect(0, 0, width, height);
+
+      // Live fingerprint strip — same geometry function as the screen and
+      // the OG card. Columns already reached (by chart time) are graded;
+      // columns still ahead show the block's static artwork.
+      const painted = paintFingerprint(baseFingerprint, chart.notes, chart.duration);
+      const stripPadding = canvasPadding;
+      const stripWidth = width - stripPadding * 2;
+      const rects = fingerprintRects(painted, stripWidth, stripHeight, 2);
+      const progressT = chart.duration > 0 ? flowTime / chart.duration : 0;
+      for (const r of rects) {
+        const barT = r.x / Math.max(1, stripWidth);
+        const reached = barT <= progressT;
+        const fill = r.painted
+          ? r.grade
+            ? GRADE_COLORS[r.grade]
+            : LANE_COLORS[r.lane]
+          : reached
+            ? STAGE_COLORS.ghost
+            : LANE_COLORS[r.lane];
+        ctx.fillStyle = reached || r.painted ? fill : withAlpha(fill, 0.55);
+        ctx.fillRect(stripPadding + r.x, r.y, r.width, r.height);
+      }
 
       // A restrained congestion heatmap behind the transaction queue.
       const heat = ctx.createRadialGradient(
@@ -113,8 +146,8 @@ export function GameCanvas({
         topY,
         width * 0.54
       );
-      heat.addColorStop(0, "rgba(62,185,95,0.13)");
-      heat.addColorStop(0.56, "rgba(242,201,76,0.025)");
+      heat.addColorStop(0, withAlpha(LANE_COLORS[2], 0.13));
+      heat.addColorStop(0.56, withAlpha(LANE_COLORS[1], 0.025));
       heat.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = heat;
       ctx.fillRect(0, 0, width, height * 0.58);
@@ -141,15 +174,15 @@ export function GameCanvas({
           isMobile ? 8 : 10,
           2
         );
-        ctx.fillStyle = `${color}22`;
+        ctx.fillStyle = withAlpha(color, 0.13);
         ctx.fill();
-        ctx.strokeStyle = `${color}55`;
+        ctx.strokeStyle = withAlpha(color, 0.33);
         ctx.lineWidth = 1;
         ctx.stroke();
       }
       ctx.restore();
 
-      ctx.fillStyle = "rgba(160,231,171,0.4)";
+      ctx.fillStyle = STAGE_COLORS.faint;
       ctx.font = `700 ${isMobile ? 8 : 9}px monospace`;
       ctx.textAlign = "center";
       ctx.textBaseline = "bottom";
@@ -162,9 +195,9 @@ export function GameCanvas({
       const bottomRight = centerX + highwayBottomWidth / 2;
 
       const bodyGrad = ctx.createLinearGradient(0, topY, 0, height);
-      bodyGrad.addColorStop(0, "rgba(9,24,16,0.42)");
-      bodyGrad.addColorStop(0.52, "rgba(6,15,10,0.78)");
-      bodyGrad.addColorStop(1, "rgba(3,8,5,0.98)");
+      bodyGrad.addColorStop(0, "rgba(18,19,17,0.5)");
+      bodyGrad.addColorStop(0.52, "rgba(14,15,13,0.8)");
+      bodyGrad.addColorStop(1, "rgba(8,9,8,0.98)");
 
       ctx.beginPath();
       ctx.moveTo(topLeft, topY);
@@ -185,8 +218,8 @@ export function GameCanvas({
         const bottomLaneRight =
           bottomLeft + (highwayBottomWidth / LANE_COUNT) * (i + 1);
         const laneGradient = ctx.createLinearGradient(0, topY, 0, height);
-        laneGradient.addColorStop(0, `${LANE_COLORS[i]}0d`);
-        laneGradient.addColorStop(1, `${LANE_COLORS[i]}03`);
+        laneGradient.addColorStop(0, withAlpha(LANE_COLORS[i], 0.05));
+        laneGradient.addColorStop(1, withAlpha(LANE_COLORS[i], 0.012));
         ctx.beginPath();
         ctx.moveTo(topLaneLeft, topY);
         ctx.lineTo(topLaneRight, topY);
@@ -198,7 +231,7 @@ export function GameCanvas({
       }
 
       // Pipeline edges and lane dividers.
-      ctx.strokeStyle = "rgba(160,231,171,0.34)";
+      ctx.strokeStyle = STAGE_COLORS.rule;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(topLeft, topY);
@@ -210,7 +243,7 @@ export function GameCanvas({
       for (let i = 1; i < LANE_COUNT; i++) {
         const tx = topLeft + (highwayTopWidth / LANE_COUNT) * i;
         const bx = bottomLeft + (highwayBottomWidth / LANE_COUNT) * i;
-        ctx.strokeStyle = "rgba(160,231,171,0.12)";
+        ctx.strokeStyle = STAGE_COLORS.line;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(tx, topY);
@@ -222,9 +255,9 @@ export function GameCanvas({
       const rowOffset = (flowTime * 92) % 58;
       for (let y = topY + rowOffset; y < height; y += 58) {
         const { left, laneWidth, t } = laneBoundsAtY(y);
-        const alpha = Math.max(0.025, 0.12 - t * 0.075);
+        const alpha = Math.max(0.02, 0.09 - t * 0.06);
         ctx.setLineDash([Math.max(4, 12 * t), Math.max(5, 8 * t)]);
-        ctx.strokeStyle = `rgba(160,231,171,${alpha.toFixed(3)})`;
+        ctx.strokeStyle = `rgba(237,235,228,${alpha.toFixed(3)})`;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(left, y);
@@ -238,7 +271,7 @@ export function GameCanvas({
       for (let i = 0; i < LANE_COUNT; i++) {
         const x =
           topBounds.left + i * topBounds.laneWidth + topBounds.laneWidth / 2;
-        ctx.fillStyle = `${LANE_COLORS[i]}aa`;
+        ctx.fillStyle = withAlpha(LANE_COLORS[i], 0.67);
         ctx.font = `700 ${isMobile ? 6 : 8}px monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
@@ -253,13 +286,11 @@ export function GameCanvas({
         hitBounds.left + hitBounds.laneWidth * LANE_COUNT,
         0
       );
-      commitGlow.addColorStop(0, "rgba(62,185,95,0.1)");
-      commitGlow.addColorStop(0.5, "rgba(160,231,171,0.96)");
-      commitGlow.addColorStop(1, "rgba(255,107,95,0.1)");
+      commitGlow.addColorStop(0, withAlpha(LANE_COLORS[0], 0.1));
+      commitGlow.addColorStop(0.5, "rgba(237,235,228,0.9)");
+      commitGlow.addColorStop(1, withAlpha(LANE_COLORS[3], 0.1));
       ctx.strokeStyle = commitGlow;
-      ctx.lineWidth = 3;
-      ctx.shadowColor = "rgba(62,185,95,0.55)";
-      ctx.shadowBlur = 14;
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.moveTo(hitBounds.left, hitY);
       ctx.lineTo(
@@ -267,9 +298,8 @@ export function GameCanvas({
         hitY
       );
       ctx.stroke();
-      ctx.shadowBlur = 0;
 
-      ctx.fillStyle = "rgba(160,231,171,0.52)";
+      ctx.fillStyle = "rgba(237,235,228,0.45)";
       ctx.font = `700 ${isMobile ? 7 : 9}px monospace`;
       ctx.textAlign = "left";
       ctx.textBaseline = "bottom";
@@ -330,13 +360,13 @@ export function GameCanvas({
           gateHeight,
           4
         );
-        ctx.fillStyle = `${LANE_COLORS[i]}0e`;
+        ctx.fillStyle = withAlpha(LANE_COLORS[i], 0.055);
         ctx.fill();
-        ctx.strokeStyle = `${LANE_COLORS[i]}99`;
+        ctx.strokeStyle = withAlpha(LANE_COLORS[i], 0.6);
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        ctx.fillStyle = `${LANE_COLORS[i]}dd`;
+        ctx.fillStyle = withAlpha(LANE_COLORS[i], 0.87);
         ctx.font = `800 ${isMobile ? 10 : 12}px monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -357,13 +387,13 @@ export function GameCanvas({
           blockHeight,
           6
         );
-        ctx.fillStyle = "rgba(5,13,9,0.88)";
+        ctx.fillStyle = "rgba(18,19,17,0.88)";
         ctx.fill();
-        ctx.strokeStyle = "rgba(160,231,171,0.35)";
+        ctx.strokeStyle = STAGE_COLORS.rule;
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        ctx.fillStyle = "rgba(160,231,171,0.52)";
+        ctx.fillStyle = STAGE_COLORS.dim;
         ctx.font = "700 8px monospace";
         ctx.textAlign = "left";
         ctx.textBaseline = "bottom";
@@ -379,16 +409,16 @@ export function GameCanvas({
           const cellColor = LANE_COLORS[(i + chart.blockNumber) % LANE_COUNT];
           roundedRectPath(ctx, cellX, cellY, 13, 13, 2);
           ctx.fillStyle =
-            i < filledSlots ? `${cellColor}b8` : "rgba(255,255,255,0.035)";
+            i < filledSlots ? withAlpha(cellColor, 0.72) : "rgba(255,255,255,0.035)";
           ctx.fill();
           ctx.strokeStyle =
             i < filledSlots
-              ? `${cellColor}cc`
+              ? withAlpha(cellColor, 0.8)
               : "rgba(255,255,255,0.08)";
           ctx.stroke();
         }
 
-        ctx.fillStyle = "rgba(255,255,255,0.46)";
+        ctx.fillStyle = "rgba(237,235,228,0.46)";
         ctx.font = "700 8px monospace";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -425,10 +455,7 @@ export function GameCanvas({
           ctx.globalAlpha = Math.max(0, 1 - progress);
           roundedRectPath(ctx, x - 12, y - 5, 24, 10, 2);
           ctx.fillStyle = LANE_COLORS[note.lane];
-          ctx.shadowColor = LANE_COLORS[note.lane];
-          ctx.shadowBlur = 10;
           ctx.fill();
-          ctx.shadowBlur = 0;
           ctx.globalAlpha = 1;
         }
       }
@@ -463,11 +490,11 @@ export function GameCanvas({
               16,
               3
             );
-            ctx.strokeStyle = "#ff6b5f";
+            ctx.strokeStyle = GRADE_COLORS.miss;
             ctx.lineWidth = 1.5;
             ctx.stroke();
             ctx.setLineDash([]);
-            ctx.fillStyle = "#ff8b82";
+            ctx.fillStyle = GRADE_COLORS.miss;
             ctx.font = `800 ${isMobile ? 7 : 8}px monospace`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -506,8 +533,6 @@ export function GameCanvas({
 
         ctx.save();
         ctx.globalAlpha = fadeAlpha;
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 12;
         roundedRectPath(
           ctx,
           x - packetWidth / 2,
@@ -516,10 +541,9 @@ export function GameCanvas({
           packetHeight,
           Math.max(2, packetHeight * 0.2)
         );
-        ctx.fillStyle = `${color}d9`;
+        ctx.fillStyle = withAlpha(color, 0.85);
         ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = `${color}ff`;
+        ctx.strokeStyle = color;
         ctx.lineWidth = 1;
         ctx.stroke();
 
@@ -535,11 +559,11 @@ export function GameCanvas({
           Math.max(2, packetHeight * 0.12),
           1
         );
-        ctx.fillStyle = "rgba(255,255,255,0.62)";
+        ctx.fillStyle = "rgba(11,12,11,0.55)";
         ctx.fill();
 
         if (!isMobile && packetWidth > 42 && bounds.t > 0.28) {
-          ctx.fillStyle = "rgba(0,0,0,0.58)";
+          ctx.fillStyle = "rgba(11,12,11,0.6)";
           ctx.font = `700 ${Math.max(7, packetHeight * 0.28)}px monospace`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
@@ -583,13 +607,11 @@ export function GameCanvas({
         ctx.font = `900 ${gradeFontSize}px monospace`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 12;
         ctx.fillText(GRADE_FEEDBACK[note.grade], 0, 0);
         ctx.restore();
       }
     },
-    [chart, getCurrentTime]
+    [chart, getCurrentTime, baseFingerprint]
   );
 
   useEffect(() => {

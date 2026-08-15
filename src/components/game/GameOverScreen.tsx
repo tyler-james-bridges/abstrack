@@ -5,12 +5,20 @@ import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useWaitForTransactionReceipt } from "wagmi";
 import type { BeatChart, FinalScore } from "@/lib/game/types";
-import { GRADE_COLORS, MAX_SCORE } from "@/lib/game/constants";
+import { MAX_SCORE } from "@/lib/game/constants";
 import { useSessionScoreSubmit } from "@/hooks/useSessionScoreSubmit";
-import { abscanTxUrl } from "@/lib/format";
-import { publicClient, getLatestBlockNumber } from "@/lib/chain/blockData";
-import { ABSTRACK_ABI, ABSTRACK_ADDRESS } from "@/lib/chain/scoreContract";
+import { abscanTxUrl, truncateAddress } from "@/lib/format";
+import { getLatestBlockNumber } from "@/lib/chain/blockData";
+import { getBlockTopScore, type BlockTopScore } from "@/lib/chain/holder";
 import { pickDailyChallengeBlock } from "@/lib/game/dailyChallenge";
+import {
+  buildFingerprint,
+  paintFingerprint,
+  furthestPainted,
+  FINGERPRINT_VERSION,
+} from "@/lib/game/fingerprint";
+import { recordFingerprintProgress } from "@/lib/game/fingerprintProgress";
+import { Fingerprint } from "@/components/ui/Fingerprint";
 
 interface GameOverScreenProps {
   finalScore: FinalScore;
@@ -18,22 +26,6 @@ interface GameOverScreenProps {
   onPlayAgain: () => void;
   isAgentRun?: boolean;
 }
-
-const GRADE_GLOW: Record<string, string> = {
-  S: "0 0 20px #ffd700, 0 0 40px #ffd700, 0 0 80px rgba(255,215,0,0.4)",
-  A: "0 0 15px #3EB95F, 0 0 30px rgba(182,255,0,0.3)",
-  B: "0 0 10px #73C98C, 0 0 20px rgba(148,216,45,0.2)",
-  C: "0 0 10px rgba(168,130,255,0.4)",
-  D: "0 0 10px rgba(255,107,107,0.3)",
-};
-
-const GRADE_COLORS_MAP: Record<string, string> = {
-  S: "#ffd700",
-  A: "#3EB95F",
-  B: "#73C98C",
-  C: "#a882ff",
-  D: "#ff6b6b",
-};
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -132,11 +124,9 @@ export function GameOverScreen({
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [canShareDaily, setCanShareDaily] = useState(false);
   const [dailyLeadText, setDailyLeadText] = useState<string | null>(null);
-  const [personalBest, setPersonalBest] = useState<{
-    score: number;
-    isNew: boolean;
-  } | null>(null);
+  const [topScore, setTopScore] = useState<BlockTopScore | null | undefined>(undefined);
   const autoShareAttemptedRef = useRef(false);
+  const progressRecordedRef = useRef(false);
 
   const {
     submitScore,
@@ -152,6 +142,62 @@ export function GameOverScreen({
   const isBusy =
     sessionStatus === "submitting" ||
     (txHash != null && !receipt);
+
+  const paintedFingerprint = useMemo(() => {
+    if (!chart) return null;
+    const base = buildFingerprint(chart);
+    return paintFingerprint(base, chart.notes, chart.duration);
+  }, [chart]);
+
+  const diedAtColumn = paintedFingerprint ? furthestPainted(paintedFingerprint) : -1;
+
+  useEffect(() => {
+    if (!paintedFingerprint || progressRecordedRef.current) return;
+    progressRecordedRef.current = true;
+    recordFingerprintProgress(
+      finalScore.blockNumber,
+      paintedFingerprint.columns,
+      diedAtColumn,
+      paintedFingerprint.progress
+    );
+  }, [paintedFingerprint, diedAtColumn, finalScore.blockNumber]);
+
+  useEffect(() => {
+    let active = true;
+    getBlockTopScore(BigInt(finalScore.blockNumber))
+      .then((top) => active && setTopScore(top))
+      .catch(() => active && setTopScore(null));
+    return () => {
+      active = false;
+    };
+  }, [finalScore.blockNumber]);
+
+  const shareUrl = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams({
+      score: String(finalScore.totalScore),
+      acc: finalScore.accuracy.toFixed(3),
+      grade: finalScore.letterGrade,
+      combo: String(finalScore.maxCombo),
+      v: String(FINGERPRINT_VERSION),
+    });
+    if (address) params.set("by", address);
+    return `${window.location.origin}/api/og/run/${finalScore.blockNumber}?${params.toString()}`;
+  }, [finalScore, address]);
+
+  const handleShareCard = useCallback(async () => {
+    if (!shareUrl) return;
+    const text = `I just processed block #${finalScore.blockNumber} on ABSTRACK — ${finalScore.totalScore.toLocaleString()} points, grade ${finalScore.letterGrade}.`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ text, url: shareUrl });
+      } else {
+        await navigator.clipboard.writeText(`${text} ${shareUrl}`);
+      }
+    } catch {
+      // no-op
+    }
+  }, [shareUrl, finalScore]);
 
   const shareDailyLead = useCallback(async () => {
     if (!dailyLeadText) return;
@@ -195,22 +241,12 @@ export function GameOverScreen({
         const dailyBlock = pickDailyChallengeBlock(latest);
         if (dailyBlock !== BigInt(finalScore.blockNumber)) return;
 
-        const result = await publicClient.readContract({
-          address: ABSTRACK_ADDRESS,
-          abi: ABSTRACK_ABI,
-          functionName: "getBlockScores",
-          args: [dailyBlock],
-        });
-
-        const entries = [...(result as unknown as Array<{ player: string; score: bigint }>)
-        ].sort((a, b) => Number(b.score - a.score));
-
-        const top = entries[0];
+        const top = await getBlockTopScore(dailyBlock);
         if (!top) return;
         const isLead = Number(top.score) <= finalScore.totalScore;
         if (!isLead) return;
 
-        const leadText = `I just hit #1 on today’s ABSTRACK challenge (#${finalScore.blockNumber}) with ${finalScore.totalScore.toLocaleString()} points. Catch me if you can.`;
+        const leadText = `I just hit #1 on today's ABSTRACK challenge (#${finalScore.blockNumber}) with ${finalScore.totalScore.toLocaleString()} points. Catch me if you can.`;
         setDailyLeadText(leadText);
         setCanShareDaily(true);
 
@@ -228,21 +264,6 @@ export function GameOverScreen({
 
     checkDailyLeadAndShare();
   }, [receipt, finalScore.blockNumber, finalScore.totalScore, isAgentRun]);
-
-  useEffect(() => {
-    if (isAgentRun || typeof window === "undefined") return;
-
-    const key = `abstrack-local-best:${finalScore.blockNumber}`;
-    const stored = Number.parseInt(localStorage.getItem(key) ?? "", 10);
-    const previous = Number.isFinite(stored) ? stored : null;
-    const isNew = previous === null || finalScore.totalScore > previous;
-    const best = isNew ? finalScore.totalScore : previous;
-
-    if (isNew) {
-      localStorage.setItem(key, String(finalScore.totalScore));
-    }
-    setPersonalBest({ score: best, isNew });
-  }, [finalScore.blockNumber, finalScore.totalScore, isAgentRun]);
 
   const validation = useMemo(
     () => validateScore(finalScore.totalScore, finalScore.blockNumber),
@@ -272,260 +293,172 @@ export function GameOverScreen({
   };
 
   const accuracy = (finalScore.accuracy * 100).toFixed(1);
-  const gradeColor = GRADE_COLORS_MAP[finalScore.letterGrade] ?? "#fff";
-  const gradeGlow = GRADE_GLOW[finalScore.letterGrade] ?? "";
-  const includedPackets =
-    finalScore.gradeCounts.perfect +
-    finalScore.gradeCounts.great +
-    finalScore.gradeCounts.good;
-  const filledCells = Math.round(finalScore.accuracy * 32);
+  const isHolder =
+    !!address && !!topScore && topScore.player.toLowerCase() === address.toLowerCase();
+
+  // "Top submitted score", not "holder" — submitScore takes an unproven
+  // number and there's no replay verification yet (HANDOFF §6).
+  const holderLine = (() => {
+    if (topScore === undefined) return null;
+    if (!topScore) return "First submitted score for this block.";
+    if (isHolder) return "You already have the top submitted score here.";
+    const diff = finalScore.totalScore - Number(topScore.score);
+    if (diff > 0) {
+      return `Beats the top submitted score (${truncateAddress(topScore.player)}) by ${diff.toLocaleString()}.`;
+    }
+    return `${truncateAddress(topScore.player)} still has the top submitted score, by ${Math.abs(diff).toLocaleString()}.`;
+  })();
 
   return (
-    <div className="flex min-h-dvh flex-col items-center overflow-y-auto bg-[#020503] text-white safe-all">
-      <div className="absolute inset-0 crt-scanlines z-10 pointer-events-none" />
-
-      <div className="relative z-20 mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-6 sm:py-10">
-        <div className="mb-4 flex items-center justify-between border-b border-[#3EB95F]/16 pb-3">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-[#3EB95F] shadow-[0_0_10px_rgba(62,185,95,0.7)]" />
-            <p className="text-[9px] uppercase tracking-[0.26em] text-[#A0E7AB]/58 font-[family-name:var(--font-avenue-mono)]">
-              Block processing complete
-            </p>
-          </div>
-          <p className="text-[9px] text-white/28 font-[family-name:var(--font-avenue-mono)]">
-            ABSTRACT / #{finalScore.blockNumber}
+    <div className="flex min-h-dvh flex-col items-center overflow-y-auto bg-[var(--background)] text-[var(--foreground)] safe-all">
+      <div className="relative z-20 mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-4 py-6 sm:py-10">
+        <div className="mb-4 flex items-center justify-between border-b border-[var(--abstrack-line)] pb-3">
+          <p className="text-[9px] uppercase tracking-[0.26em] text-[var(--abstrack-dim)] font-[family-name:var(--font-avenue-mono)]">
+            Run complete
+          </p>
+          <p className="text-[9px] text-[var(--abstrack-faint)] font-[family-name:var(--font-avenue-mono)]">
+            #{finalScore.blockNumber}
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-[1.05fr_0.95fr]">
-          <section className="block-surface p-5 sm:p-6">
-            <div className="flex items-start justify-between gap-5">
-              <div>
-                <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-[family-name:var(--font-avenue-mono)]">
-                  Finalized candidate
-                </p>
-                <h1 className="mt-2 text-3xl font-black font-[family-name:var(--font-roobert)]">
-                  Block sealed.
-                </h1>
-                <p className="mt-2 text-xs text-white/36 font-[family-name:var(--font-avenue-mono)]">
-                  {includedPackets}/{finalScore.totalNotes} packets included
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-[8px] uppercase tracking-[0.18em] text-white/25 font-[family-name:var(--font-avenue-mono)]">
-                  Rank
-                </p>
-                <p
-                  className="text-6xl font-black leading-none font-[family-name:var(--font-roobert)]"
-                  style={{ color: gradeColor, textShadow: gradeGlow }}
-                >
-                  {finalScore.letterGrade}
-                </p>
-              </div>
-            </div>
+        <h1 className="text-5xl font-black tracking-[-0.045em] font-[family-name:var(--font-avenue-mono)]">
+          {finalScore.blockNumber}
+        </h1>
 
-            <div className="mt-6 grid grid-cols-8 gap-1 rounded-md border border-white/8 bg-black/40 p-3">
-              {Array.from({ length: 32 }, (_, i) => {
-                const colors = ["#2f7f6a", "#3EB95F", "#f2c94c", "#ff6b5f"];
-                const color = colors[(i + finalScore.blockNumber) % colors.length];
-                return (
-                  <span
-                    key={i}
-                    className="h-4 rounded-[2px] border"
-                    style={{
-                      borderColor:
-                        i < filledCells ? `${color}99` : "rgba(255,255,255,0.07)",
-                      background:
-                        i < filledCells ? `${color}88` : "rgba(255,255,255,0.025)",
-                      boxShadow:
-                        i < filledCells ? `0 0 8px ${color}18` : undefined,
-                    }}
-                  />
-                );
-              })}
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-md border border-white/8 bg-white/8">
-              {[
-                { label: "Inclusion", value: `${accuracy}%` },
-                { label: "Peak flow", value: finalScore.maxCombo.toString() },
-                {
-                  label: "Source tx",
-                  value: (chart?.transactionCount ?? finalScore.totalNotes).toLocaleString(),
-                },
-              ].map((item) => (
-                <div key={item.label} className="bg-[#050b08] px-2 py-3 text-center">
-                  <p className="text-[8px] uppercase tracking-wider text-white/25 font-[family-name:var(--font-avenue-mono)]">
-                    {item.label}
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-white/76 font-[family-name:var(--font-avenue-mono)]">
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 space-y-1 border-t border-white/8 pt-3 text-[9px] font-[family-name:var(--font-avenue-mono)]">
-              <div className="flex justify-between gap-3">
-                <span className="uppercase tracking-wider text-white/24">Block hash</span>
-                <span className="truncate text-white/42">
-                  {chart
-                    ? `${chart.blockHash.slice(0, 12)}…${chart.blockHash.slice(-8)}`
-                    : "source verified"}
-                </span>
-              </div>
-              {chart && (
-                <div className="flex justify-between gap-3">
-                  <span className="uppercase tracking-wider text-white/24">Gas processed</span>
-                  <span className="text-white/42">
-                    {(chart.gasUsed / 1e6).toFixed(2)}M
-                  </span>
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="block-surface flex flex-col p-5 sm:p-6">
-            <div>
-              <p className="text-[9px] uppercase tracking-[0.2em] text-white/30 font-[family-name:var(--font-avenue-mono)]">
-                Sequencer score
-              </p>
-              <p className="mt-2 text-3xl sm:text-4xl font-bold tabular-nums font-[family-name:var(--font-avenue-mono)]">
-                {finalScore.totalScore.toLocaleString()}
-              </p>
-              <p className="mt-1 text-[9px] text-white/24 font-[family-name:var(--font-avenue-mono)]">
-                / {MAX_SCORE.toLocaleString()} MAX EFFICIENCY
-              </p>
-              {personalBest && (
-                <p
-                  className={`mt-2 text-[9px] uppercase tracking-[0.18em] font-[family-name:var(--font-avenue-mono)] ${
-                    personalBest.isNew ? "text-[#A0E7AB]" : "text-white/28"
-                  }`}
-                >
-                  {personalBest.isNew
-                    ? "New personal best"
-                    : `Personal best ${personalBest.score.toLocaleString()}`}
-                </p>
-              )}
-            </div>
-
-            <div className="my-5 grid grid-cols-4 gap-1.5">
-              {(
-                [
-                  ["perfect", "sealed"],
-                  ["great", "valid"],
-                  ["good", "late"],
-                  ["miss", "returned"],
-                ] as const
-              ).map(([grade, label]) => (
-                <div
-                  key={grade}
-                  className="rounded-[4px] border px-1 py-2 text-center"
-                  style={{
-                    borderColor: GRADE_COLORS[grade] + "22",
-                    background: GRADE_COLORS[grade] + "07",
-                  }}
-                >
-                  <p
-                    className="text-[7px] font-bold uppercase font-[family-name:var(--font-avenue-mono)]"
-                    style={{ color: GRADE_COLORS[grade] }}
-                  >
-                    {label}
-                  </p>
-                  <p className="mt-1 text-base font-bold font-[family-name:var(--font-avenue-mono)]">
-                    {finalScore.gradeCounts[grade]}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            {displayError && (
-              <div className="mb-3 rounded-md border border-red-500/20 bg-red-500/8 p-3">
-                <p className="text-xs text-red-400">{displayError}</p>
-              </div>
-            )}
-
-            <div className="mt-auto flex flex-col gap-2.5">
-              {address && !isAgentRun && !receipt && (
-                <button
-                  onClick={handleSubmitScore}
-                  disabled={isBusy || !validation.valid}
-                  className="processing-btn h-12 w-full rounded-md bg-[#A0E7AB] text-sm font-bold text-[#031006] transition-all hover:bg-[#b9f2c2] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45 font-[family-name:var(--font-roobert)]"
-                >
-                  {sessionStatus === "submitting"
-                    ? "Publishing score..."
-                    : txHash && !receipt
-                      ? "Confirming..."
-                      : !validation.valid
-                        ? "Score invalid"
-                        : "Publish score · gas-free"}
-                </button>
-              )}
-
-              {isAgentRun && (
-                <div className="w-full rounded-md border border-[#73C98C]/18 bg-[#73C98C]/5 px-3 py-2 text-center">
-                  <p className="text-[9px] uppercase tracking-[0.16em] text-[#A0E7AB]/60 font-[family-name:var(--font-avenue-mono)]">
-                    Autonomous run · not leaderboard eligible
-                  </p>
-                </div>
-              )}
-
-              {submissionError && !isBusy && (
-                <button
-                  onClick={() => {
-                    resetSession();
-                    setSubmissionError(null);
-                  }}
-                  className="h-11 w-full rounded-md border border-red-500/25 text-sm text-red-400 hover:bg-red-500/8 font-[family-name:var(--font-roobert)]"
-                >
-                  Retry publication
-                </button>
-              )}
-
-              {receipt && (
-                <div className="rounded-md border border-[#3EB95F]/20 bg-[#3EB95F]/5 p-3 text-center">
-                  <p className="text-sm font-medium text-[#A0E7AB] font-[family-name:var(--font-roobert)]">
-                    Score published onchain
-                  </p>
-                  <a
-                    href={abscanTxUrl(receipt.transactionHash)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] text-[#73C98C]/70 underline hover:text-[#73C98C] font-[family-name:var(--font-avenue-mono)]"
-                  >
-                    View receipt on Abscan
-                  </a>
-                  {canShareDaily && (
-                    <button
-                      onClick={shareDailyLead}
-                      className="mt-3 h-10 w-full rounded-md border border-[#3EB95F]/30 text-[10px] uppercase tracking-wider text-[#3EB95F] hover:bg-[#3EB95F]/10"
-                    >
-                      Share #1 daily run
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <button
-                onClick={onPlayAgain}
-                className="h-12 w-full rounded-md border border-[#3EB95F]/25 text-sm font-bold text-[#A0E7AB]/80 transition-all hover:border-[#3EB95F]/40 hover:bg-[#3EB95F]/6 active:scale-[0.99] font-[family-name:var(--font-roobert)]"
-              >
-                Rebuild this block
-              </button>
-
-              <button
-                onClick={() => router.push("/")}
-                className="h-10 w-full text-sm text-white/36 transition-colors hover:text-white/65 font-[family-name:var(--font-roobert)]"
-              >
-                Return to block explorer
-              </button>
-            </div>
-          </section>
+        <div className="mt-4 rounded-md border border-[var(--abstrack-line)] bg-[var(--abstrack-panel)] p-3">
+          <Fingerprint
+            fingerprint={paintedFingerprint}
+            height={140}
+            gap={2}
+            ghostUnpainted
+            playheadColumn={diedAtColumn}
+          />
         </div>
 
-        <div className="mt-3 hidden justify-center gap-4 text-[9px] text-white/18 sm:flex font-[family-name:var(--font-avenue-mono)]">
-          <span><kbd>R</kbd> rebuild</span>
-          <span><kbd>Esc</kbd> explorer</span>
+        <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-md border border-[var(--abstrack-line)] bg-[var(--abstrack-line)]">
+          {[
+            { label: "Score", value: finalScore.totalScore.toLocaleString() },
+            { label: "Accuracy", value: `${accuracy}%` },
+            { label: "Grade", value: finalScore.letterGrade },
+          ].map((item) => (
+            <div key={item.label} className="bg-[var(--abstrack-panel)] px-2 py-3 text-center">
+              <p className="text-[8px] uppercase tracking-wider text-[var(--abstrack-faint)] font-[family-name:var(--font-avenue-mono)]">
+                {item.label}
+              </p>
+              <p className="mt-1 text-lg font-bold text-[var(--foreground)] font-[family-name:var(--font-avenue-mono)]">
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {holderLine && (
+          <p className="mt-3 text-center text-[10px] uppercase tracking-[0.12em] text-[var(--abstrack-dim)] font-[family-name:var(--font-avenue-mono)]">
+            {holderLine}
+          </p>
+        )}
+
+        {displayError && (
+          <div
+            className="mt-3 rounded-md border p-3"
+            style={{
+              borderColor: "var(--abstrack-miss)",
+              background: "rgba(226,90,73,0.08)",
+            }}
+          >
+            <p className="text-xs" style={{ color: "var(--abstrack-miss)" }}>
+              {displayError}
+            </p>
+          </div>
+        )}
+
+        <div className="mt-5 flex flex-col gap-2.5">
+          {address && !isAgentRun && !receipt && (
+            <button
+              onClick={handleSubmitScore}
+              disabled={isBusy || !validation.valid}
+              className="processing-btn h-12 w-full rounded-md bg-[var(--abstrack-lane-2)] text-sm font-bold text-black transition-all hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45 font-[family-name:var(--font-roobert)]"
+            >
+              {sessionStatus === "submitting"
+                ? "Publishing run..."
+                : txHash && !receipt
+                  ? "Confirming..."
+                  : !validation.valid
+                    ? "Score invalid"
+                    : "Publish run · gas-free"}
+            </button>
+          )}
+
+          {isAgentRun && (
+            <div className="w-full rounded-md border border-[var(--abstrack-line)] px-3 py-2 text-center">
+              <p className="text-[9px] uppercase tracking-[0.16em] text-[var(--abstrack-dim)] font-[family-name:var(--font-avenue-mono)]">
+                Autonomous run · not leaderboard eligible
+              </p>
+            </div>
+          )}
+
+          {submissionError && !isBusy && (
+            <button
+              onClick={() => {
+                resetSession();
+                setSubmissionError(null);
+              }}
+              className="h-11 w-full rounded-md border font-[family-name:var(--font-roobert)] text-sm"
+              style={{ borderColor: "var(--abstrack-miss)", color: "var(--abstrack-miss)" }}
+            >
+              Retry publication
+            </button>
+          )}
+
+          {receipt && (
+            <div className="rounded-md border border-[var(--abstrack-line)] p-3 text-center">
+              <p className="text-sm font-medium text-[var(--foreground)] font-[family-name:var(--font-roobert)]">
+                Run published onchain
+              </p>
+              <a
+                href={abscanTxUrl(receipt.transactionHash)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-[var(--abstrack-dim)] underline hover:text-[var(--foreground)] font-[family-name:var(--font-avenue-mono)]"
+              >
+                View receipt on Abscan
+              </a>
+              {canShareDaily && (
+                <button
+                  onClick={shareDailyLead}
+                  className="mt-3 h-10 w-full rounded-md border border-[var(--abstrack-lane-2)]/40 text-[10px] uppercase tracking-wider text-[var(--abstrack-lane-2)] hover:bg-[var(--abstrack-lane-2)]/10"
+                >
+                  Share #1 daily run
+                </button>
+              )}
+            </div>
+          )}
+
+          <button
+            onClick={handleShareCard}
+            className="h-11 w-full rounded-md border border-[var(--abstrack-line)] text-sm text-[var(--abstrack-dim)] transition-all hover:border-[var(--abstrack-rule)] hover:text-[var(--foreground)] font-[family-name:var(--font-roobert)]"
+          >
+            Share card
+          </button>
+
+          <button
+            onClick={onPlayAgain}
+            className="h-12 w-full rounded-md border border-[var(--abstrack-line)] text-sm font-bold text-[var(--abstrack-dim)] transition-all hover:border-[var(--abstrack-rule)] hover:text-[var(--foreground)] active:scale-[0.99] font-[family-name:var(--font-roobert)]"
+          >
+            Retry
+          </button>
+
+          <button
+            onClick={() => router.push("/")}
+            className="h-10 w-full text-sm text-[var(--abstrack-faint)] transition-colors hover:text-[var(--abstrack-dim)] font-[family-name:var(--font-roobert)]"
+          >
+            Return to the instrument
+          </button>
+        </div>
+
+        <div className="mt-3 hidden justify-center gap-4 text-[9px] text-[var(--abstrack-faint)] sm:flex font-[family-name:var(--font-avenue-mono)]">
+          <span><kbd>R</kbd> retry</span>
+          <span><kbd>Esc</kbd> instrument</span>
         </div>
       </div>
     </div>

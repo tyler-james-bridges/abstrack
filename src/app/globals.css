@@ -1,22 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: #020503;
-  --foreground: #ededed;
+  /* stage */
+  --background: #0b0c0b;
+  --abstrack-panel: #121311;
+  --abstrack-line: #1d1e1a;
+  --abstrack-rule: #33342d;
+  --abstrack-ghost: #26271f; /* unpainted bars */
+  --foreground: #edebe4; /* bone */
+  --abstrack-dim: #8d918a;
+  --abstrack-faint: #5c605a;
 
-  /* Abstract blockspace palette */
-  --abstrack-perfect: #A0E7AB;
-  --abstrack-great: #3EB95F;
-  --abstrack-good: #f2c94c;
-  --abstrack-miss: #ff6b5f;
-  --abstrack-panel: #050b08;
-  --abstrack-line: rgba(160, 231, 171, 0.14);
+  /* fee bands — one lightness, one chroma, hue only varies */
+  --abstrack-lane-0: oklch(0.76 0.15 40); /* ECONOMY */
+  --abstrack-lane-1: oklch(0.76 0.15 95); /* STANDARD */
+  --abstrack-lane-2: oklch(0.76 0.15 155); /* PRIORITY */
+  --abstrack-lane-3: oklch(0.76 0.15 270); /* EXPRESS */
 
-  /* Fee-band colors */
-  --abstrack-lane-0: #2f7f6a;
-  --abstrack-lane-1: #3EB95F;
-  --abstrack-lane-2: #f2c94c;
-  --abstrack-lane-3: #ff6b5f;
+  /* judgment */
+  --abstrack-perfect: oklch(0.76 0.15 270);
+  --abstrack-great: oklch(0.76 0.15 155);
+  --abstrack-good: oklch(0.76 0.15 95);
+  --abstrack-miss: oklch(0.62 0.19 25);
 }
 
 @theme inline {
@@ -249,131 +254,32 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ================================================================
-   BLOCKSPACE / SEQUENCER DESIGN SYSTEM
+   INSTRUMENT DESIGN SYSTEM — the fingerprint is the only thing that
+   should emit colour. Panels stay flat and quiet.
    ================================================================ */
 
-/* Neon text glow — pulsing animation */
-@keyframes neon-pulse {
-  0%, 100% {
-    text-shadow:
-      0 0 4px rgba(62, 185, 95, 0.6),
-      0 0 11px rgba(62, 185, 95, 0.4),
-      0 0 19px rgba(62, 185, 95, 0.2);
-  }
-  50% {
-    text-shadow:
-      0 0 7px rgba(62, 185, 95, 0.8),
-      0 0 21px rgba(62, 185, 95, 0.6),
-      0 0 42px rgba(62, 185, 95, 0.3),
-      0 0 82px rgba(62, 185, 95, 0.1);
-  }
-}
-
-.neon-pulse {
-  animation: neon-pulse 3s ease-in-out infinite;
-}
-
-/* Neon border glow — pulsing */
-@keyframes border-glow {
-  0%, 100% {
-    box-shadow:
-      0 0 5px rgba(62, 185, 95, 0.1),
-      inset 0 0 5px rgba(62, 185, 95, 0.03);
-  }
-  50% {
-    box-shadow:
-      0 0 10px rgba(62, 185, 95, 0.15),
-      0 0 20px rgba(62, 185, 95, 0.05),
-      inset 0 0 10px rgba(62, 185, 95, 0.05);
-  }
-}
-
-/* Data surfaces are square, quiet, and weighted toward the left edge. */
+/* Data surfaces are square, quiet, and flat. */
 .retro-card,
 .block-surface {
   position: relative;
-  background:
-    linear-gradient(145deg, rgba(8, 19, 13, 0.94), rgba(3, 8, 5, 0.94));
-  border: 1px solid rgba(160, 231, 171, 0.13);
+  background: var(--abstrack-panel);
+  border: 1px solid var(--abstrack-line);
   border-radius: 7px;
-  box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.28),
-    inset 3px 0 0 rgba(62, 185, 95, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.035);
-  backdrop-filter: blur(12px);
 }
 
-.block-surface::before {
-  content: "";
-  position: absolute;
-  top: -1px;
-  right: 18px;
-  width: 46px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(160, 231, 171, 0.65));
-  box-shadow: 0 0 8px rgba(62, 185, 95, 0.32);
-  pointer-events: none;
-}
-
-/* Retro section header — with underline glow */
+/* Section header — plain rule, no glow. */
 .retro-header::after {
   content: '';
   display: block;
   width: 100%;
   height: 1px;
   margin-top: 8px;
-  background: linear-gradient(90deg, transparent, rgba(62, 185, 95, 0.4), transparent);
+  background: var(--abstrack-rule);
 }
 
-/* Synthwave perspective grid scroll */
-@keyframes grid-flow {
-  0% { background-position: 0 0; }
-  100% { background-position: 0 70px; }
-}
-
-@keyframes road-scroll {
-  0% { background-position: 0 0; }
-  100% { background-position: 0 34px; }
-}
-
-/* Horizon glow pulse */
-@keyframes horizon-pulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
-}
-
-/* Fine ledger rows — subtle enough to sit over a moving playfield. */
-.crt-scanlines {
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(160, 231, 171, 0.012) 0px,
-    rgba(160, 231, 171, 0.012) 1px,
-    transparent 1px,
-    transparent 5px
-  );
-  pointer-events: none;
-}
-
-/* Neon button glow on hover */
 .neon-btn {
   position: relative;
   transition: all 0.3s ease;
-}
-
-.neon-btn::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  background: linear-gradient(135deg, rgba(62, 185, 95, 0.2), rgba(115, 201, 140, 0.2));
-  filter: blur(8px);
-  z-index: -1;
-}
-
-.neon-btn:hover::after {
-  opacity: 1;
 }
 
 .processing-btn {
@@ -408,28 +314,8 @@ input[type="range"]::-moz-range-thumb {
   transform: translateX(70%);
 }
 
-/* Star twinkle for background particles */
-@keyframes twinkle {
-  0%, 100% { opacity: 0.2; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.5); }
-}
-
-/* Score counter glow */
-@keyframes score-glow {
-  0%, 100% {
-    text-shadow: 0 0 10px rgba(62, 185, 95, 0.3);
-  }
-  50% {
-    text-shadow: 0 0 20px rgba(62, 185, 95, 0.5), 0 0 40px rgba(62, 185, 95, 0.2);
-  }
-}
-
-/* Retro input focus glow */
 .retro-input:focus {
-  border-color: rgba(62, 185, 95, 0.5);
-  box-shadow:
-    0 0 8px rgba(62, 185, 95, 0.15),
-    inset 0 0 4px rgba(62, 185, 95, 0.05);
+  border-color: var(--abstrack-lane-1);
   outline: none;
 }
 

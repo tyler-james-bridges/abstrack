@@ -5,6 +5,7 @@ import {
   LANE_COLORS,
   LANE_LABELS,
   LANE_NAMES,
+  withAlpha,
 } from "@/lib/game/constants";
 
 interface HowToPlayOverlayProps {
@@ -56,8 +57,6 @@ export function HowToPlayOverlay({ onDismiss }: HowToPlayOverlayProps) {
         backdropFilter: "blur(8px)",
       }}
     >
-      <div className="absolute inset-0 crt-scanlines" />
-
       <div className="w-full max-w-2xl relative z-10">
         <div className="block-surface p-5 sm:p-7">
           <div className="mb-5 sm:mb-6 text-center">
@@ -89,8 +88,7 @@ export function HowToPlayOverlay({ onDismiss }: HowToPlayOverlayProps) {
                       style={{
                         borderColor: LANE_COLORS[i],
                         color: LANE_COLORS[i],
-                        background: `${LANE_COLORS[i]}12`,
-                        boxShadow: `inset 0 0 14px ${LANE_COLORS[i]}22, 0 0 10px ${LANE_COLORS[i]}1c`,
+                        background: withAlpha(LANE_COLORS[i], 0.07),
                       }}
                     >
                       {label}
