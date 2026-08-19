@@ -3,40 +3,53 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getRecentBlocks, type BlockData } from "@/lib/chain/blockData";
-import { timeAgo, estimateDifficulty } from "@/lib/format";
-import { BlockMosaic } from "@/components/ui/BlockMosaic";
+import { generateBeatChart } from "@/lib/game/BlockBeatGenerator";
+import { buildFingerprint, type Fingerprint as FingerprintData } from "@/lib/game/fingerprint";
+import { Fingerprint } from "@/components/ui/Fingerprint";
 
+interface TickerBlock {
+  block: BlockData;
+  fingerprint: FingerprintData;
+}
+
+/**
+ * The live block ticker. Kept at getRecentBlocks(8) — that's 8 parallel RPC
+ * calls already; raising it multiplies that cost for a strip that scrolls
+ * past in a couple seconds anyway.
+ */
 export function RecentBlocks() {
   const router = useRouter();
-  const [blocks, setBlocks] = useState<BlockData[]>([]);
+  const [blocks, setBlocks] = useState<TickerBlock[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
     getRecentBlocks(8)
-      .then(setBlocks)
+      .then((fetched) => {
+        if (!active) return;
+        setBlocks(
+          fetched.map((block) => ({
+            block,
+            fingerprint: buildFingerprint(generateBeatChart(block), 24),
+          }))
+        );
+      })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
   }, []);
 
   if (loading) {
     return (
-      <div className="block-surface w-full p-5 sm:p-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-[9px] font-bold font-[family-name:var(--font-avenue-mono)] tracking-[0.22em] uppercase text-[#A0E7AB]/48">
-            Confirmed chain
-          </h2>
-          <span className="text-[8px] uppercase tracking-wider text-white/22 font-[family-name:var(--font-avenue-mono)]">
-            syncing blocks
-          </span>
-        </div>
-        <div className="mt-5 flex gap-3 overflow-hidden">
-          {Array.from({ length: 4 }, (_, i) => (
-            <div
-              key={i}
-              className="h-36 min-w-[190px] animate-pulse rounded-md border border-white/6 bg-white/[0.02]"
-            />
-          ))}
-        </div>
+      <div className="flex items-center gap-2 overflow-hidden">
+        {Array.from({ length: 8 }, (_, i) => (
+          <div
+            key={i}
+            className="h-8 w-14 shrink-0 animate-pulse rounded-[3px] border border-[var(--abstrack-line)] bg-white/[0.02]"
+          />
+        ))}
       </div>
     );
   }
@@ -44,69 +57,26 @@ export function RecentBlocks() {
   if (blocks.length === 0) return null;
 
   return (
-    <div className="block-surface w-full p-5 sm:p-6">
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <p className="text-[8px] uppercase tracking-[0.22em] text-[#A0E7AB]/45 font-[family-name:var(--font-avenue-mono)]">
-            Abstract mainnet
+    <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+      {blocks.map(({ block, fingerprint }) => (
+        <button
+          key={block.number.toString()}
+          onClick={() => router.push(`/play/${block.number}`)}
+          className="group shrink-0 rounded-[3px] border border-[var(--abstrack-line)] bg-black/20 px-1.5 pt-1.5 pb-1 text-left transition-colors hover:border-[var(--abstrack-lane-2)]/50"
+          title={`Block #${block.number}`}
+        >
+          <Fingerprint
+            fingerprint={fingerprint}
+            height={22}
+            gap={1}
+            ghostUnpainted={false}
+            className="w-14"
+          />
+          <p className="mt-1 text-[7px] uppercase tracking-wider text-[var(--abstrack-faint)] font-[family-name:var(--font-avenue-mono)] group-hover:text-[var(--abstrack-dim)]">
+            #{block.number.toString().slice(-5)}
           </p>
-          <h2 className="mt-1 text-lg font-bold text-white/82 font-[family-name:var(--font-roobert)]">
-            Confirmed chain
-          </h2>
-        </div>
-        <p className="text-right text-[8px] uppercase tracking-wider text-white/22 font-[family-name:var(--font-avenue-mono)]">
-          Select any block to process
-        </p>
-      </div>
-      <div className="mt-5 flex gap-3 overflow-x-auto pb-2 [scrollbar-width:thin]">
-          {blocks.map((block) => {
-            const difficulty = estimateDifficulty(
-              block.gasUsed,
-              block.transactions.length
-            );
-
-            return (
-              <button
-                key={block.number.toString()}
-                onClick={() => router.push(`/play/${block.number}`)}
-                className="group min-w-[210px] rounded-md border border-white/8 bg-black/24 p-3 text-left transition-all hover:-translate-y-0.5 hover:border-[#3EB95F]/28 hover:bg-[#3EB95F]/[0.025] active:translate-y-0"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-[8px] uppercase tracking-wider text-white/22 font-[family-name:var(--font-avenue-mono)]">
-                      Confirmed {timeAgo(block.timestamp)}
-                    </p>
-                    <p className="mt-1 text-sm text-white/72 transition-colors group-hover:text-[#A0E7AB] font-[family-name:var(--font-avenue-mono)]">
-                      #{block.number.toString()}
-                    </p>
-                  </div>
-                  <span
-                    className={`rounded-[3px] border border-white/7 bg-white/[0.025] px-1.5 py-1 text-[7px] font-bold uppercase ${difficulty.color}`}
-                  >
-                    {difficulty.label}
-                  </span>
-                </div>
-
-                <BlockMosaic
-                  seed={block.number}
-                  cells={24}
-                  className="mt-3 min-h-[62px] !grid-cols-8 !gap-0.5 !p-2"
-                />
-
-                <div className="mt-3 flex items-end justify-between">
-                  <p className="text-[8px] leading-relaxed text-white/28 font-[family-name:var(--font-avenue-mono)]">
-                    {block.transactions.length} TX
-                    <br />
-                    {(Number(block.gasUsed) / 1e6).toFixed(2)}M GAS
-                  </p>
-                  <span className="text-[8px] uppercase tracking-wider text-[#3EB95F]/45 transition-colors group-hover:text-[#A0E7AB] font-[family-name:var(--font-avenue-mono)]">
-                    Process &rarr;
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-      </div>
+        </button>
+      ))}
     </div>
   );
 }

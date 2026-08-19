@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import type { GameState } from "@/lib/game/types";
-import { COMBO_MULTIPLIER_TIERS } from "@/lib/game/constants";
+import { COMBO_MULTIPLIER_TIERS, LANE_COLORS } from "@/lib/game/constants";
 
 const VOLUME_STORAGE_KEY = "abstrack-volume";
 
@@ -99,9 +99,7 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
           className="h-full transition-all duration-100"
           style={{
             width: `${progress * 100}%`,
-            background:
-              "linear-gradient(90deg, #2f7f6a, #3EB95F 58%, #f2c94c)",
-            boxShadow: "0 0 10px rgba(62,185,95,0.35)",
+            background: `linear-gradient(90deg, ${LANE_COLORS[0]}, ${LANE_COLORS[1]} 58%, ${LANE_COLORS[2]})`,
           }}
         />
       </div>
@@ -109,18 +107,18 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
       {/* Network identity */}
       {chart && (
         <div
-          className="absolute left-16 hidden sm:block border-l border-[#3EB95F]/35 pl-3 font-[family-name:var(--font-avenue-mono)]"
+          className="absolute left-16 hidden sm:block border-l border-[var(--abstrack-rule)] pl-3 font-[family-name:var(--font-avenue-mono)]"
           style={{
             top: "calc(env(safe-area-inset-top, 0px) + 14px)",
           }}
         >
-          <p className="text-[9px] uppercase tracking-[0.22em] text-[#A0E7AB]/45">
+          <p className="text-[9px] uppercase tracking-[0.22em] text-[var(--abstrack-dim)]">
             Abstract mainnet · processing
           </p>
-          <p className="mt-1 text-xs font-bold text-white/70">
+          <p className="mt-1 text-xs font-bold text-[var(--foreground)]">
             BLOCK #{chart.blockNumber}
           </p>
-          <p className="mt-0.5 text-[9px] text-white/30">
+          <p className="mt-0.5 text-[9px] text-[var(--abstrack-faint)]">
             {(chart.gasUsed / 1e6).toFixed(2)}M GAS · {chart.bpm} BPM
           </p>
         </div>
@@ -128,43 +126,33 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
 
       {/* Score / throughput cluster */}
       <div
-        className="absolute right-3 sm:right-4 min-w-[124px] text-right rounded-md border border-[#73C98C]/18 bg-[#030805]/80 px-3 py-2 backdrop-blur-md"
+        className="absolute right-3 sm:right-4 min-w-[124px] text-right rounded-md border border-[var(--abstrack-line)] bg-[var(--abstrack-panel)]/90 px-3 py-2 backdrop-blur-md"
         style={{
           top: "calc(env(safe-area-inset-top, 0px) + 10px)",
-          boxShadow:
-            "0 12px 34px rgba(0,0,0,0.34), inset 3px 0 0 rgba(62,185,95,0.35)",
         }}
       >
-        <p className="text-[8px] uppercase tracking-[0.18em] text-white/30 font-[family-name:var(--font-avenue-mono)]">
+        <p className="text-[8px] uppercase tracking-[0.18em] text-[var(--abstrack-faint)] font-[family-name:var(--font-avenue-mono)]">
           Sequencer score
         </p>
-        <p
-          className="mt-0.5 text-lg sm:text-2xl font-bold text-white font-[family-name:var(--font-avenue-mono)] tabular-nums leading-tight"
-          style={{
-            textShadow: "0 0 8px rgba(62,185,95,0.22)",
-          }}
-        >
+        <p className="mt-0.5 text-lg sm:text-2xl font-bold text-[var(--foreground)] font-[family-name:var(--font-avenue-mono)] tabular-nums leading-tight">
           {score.toLocaleString()}
         </p>
         {combo > 0 && (
-          <div className="mt-1.5 flex items-center justify-end gap-1.5 border-t border-white/8 pt-1.5 font-[family-name:var(--font-avenue-mono)]">
-            <span className="text-[9px] uppercase tracking-wider text-white/45">
+          <div className="mt-1.5 flex items-center justify-end gap-1.5 border-t border-[var(--abstrack-line)] pt-1.5 font-[family-name:var(--font-avenue-mono)]">
+            <span className="text-[9px] uppercase tracking-wider text-[var(--abstrack-dim)]">
               {combo} throughput
             </span>
             <span
               className="rounded-sm px-1.5 py-0.5 text-[9px] font-bold"
               style={{
-                color: multiplier > 1 ? "#ffd700" : "#A0E7AB",
-                background:
-                  multiplier > 1
-                    ? "rgba(255,215,0,0.10)"
-                    : "rgba(160,231,171,0.08)",
+                color: multiplier > 1 ? LANE_COLORS[1] : LANE_COLORS[2],
+                background: "rgba(237,235,228,0.06)",
               }}
             >
               ×{multiplier}
             </span>
             {nextTier && (
-              <span className="hidden md:inline text-[8px] text-white/22">
+              <span className="hidden md:inline text-[8px] text-[var(--abstrack-faint)]">
                 ×{nextTier.multiplier} in {nextTier.threshold - combo}
               </span>
             )}
@@ -181,33 +169,31 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
           }}
         >
           <div className="flex items-center justify-between text-[8px] uppercase tracking-[0.16em] font-[family-name:var(--font-avenue-mono)]">
-            <span className="text-[#A0E7AB]/48">
+            <span className="text-[var(--abstrack-dim)]">
               Block assembly
             </span>
-            <span className="text-white/36 tabular-nums">
+            <span className="text-[var(--abstrack-faint)] tabular-nums">
               {processed}/{chart.notes.length} packets
             </span>
           </div>
-          <div className="relative mt-1 h-[5px] overflow-hidden rounded-[2px] border border-white/8 bg-black/55">
+          <div className="relative mt-1 h-[5px] overflow-hidden rounded-[2px] border border-[var(--abstrack-line)] bg-black/55">
             <div
               className="absolute inset-y-0 left-0 transition-all duration-100"
               style={{
                 width: `${progress * 100}%`,
-                background: "rgba(255,255,255,0.055)",
+                background: "rgba(237,235,228,0.06)",
               }}
             />
             <div
               className="absolute inset-y-0 left-0 transition-all duration-150"
               style={{
                 width: `${inclusion * 100}%`,
-                background:
-                  "linear-gradient(90deg, #2f7f6a, #3EB95F, #A0E7AB)",
-                boxShadow: "0 0 8px rgba(62,185,95,0.38)",
+                background: `linear-gradient(90deg, ${LANE_COLORS[0]}, ${LANE_COLORS[1]}, ${LANE_COLORS[2]})`,
               }}
             />
             <div
-              className="absolute inset-y-0 w-px bg-[#f2c94c]/80"
-              style={{ left: `${progress * 100}%` }}
+              className="absolute inset-y-0 w-px opacity-80"
+              style={{ left: `${progress * 100}%`, background: LANE_COLORS[2] }}
             />
           </div>
         </div>
@@ -224,7 +210,7 @@ export function GameHUD({ state, onVolumeChange }: GameHUDProps) {
         <div className="flex items-center">
           <button
             onClick={() => setShowVolumeSlider((v) => !v)}
-            className="flex items-center justify-center w-11 h-11 text-white/35 hover:text-[#3EB95F] active:text-[#3EB95F] transition-colors rounded-md"
+            className="flex items-center justify-center w-11 h-11 text-white/35 hover:text-[var(--foreground)] active:text-[var(--foreground)] transition-colors rounded-md"
             aria-label="Toggle volume"
           >
             {volumeIcon}

@@ -6,6 +6,7 @@ import {
   LANE_COLORS,
   LANE_LABELS,
   LANE_NAMES,
+  withAlpha,
 } from "@/lib/game/constants";
 
 interface GameReadyOverlayProps {
@@ -85,10 +86,14 @@ export function GameReadyOverlay({
                   key={i}
                   className="aspect-square rounded-[2px] border"
                   style={{
-                    borderColor: `${LANE_COLORS[(i + chart.blockNumber) % 4]}55`,
-                    background: `${LANE_COLORS[(i + chart.blockNumber) % 4]}${
-                      i < 8 ? "55" : "0d"
-                    }`,
+                    borderColor: withAlpha(
+                      LANE_COLORS[(i + chart.blockNumber) % 4],
+                      0.33
+                    ),
+                    background: withAlpha(
+                      LANE_COLORS[(i + chart.blockNumber) % 4],
+                      i < 8 ? 0.33 : 0.05
+                    ),
                   }}
                 />
               ))}
@@ -127,16 +132,16 @@ export function GameReadyOverlay({
                 <span
                   className="mx-auto flex h-8 w-full items-center justify-center rounded-[4px] border text-xs font-bold font-[family-name:var(--font-avenue-mono)]"
                   style={{
-                    borderColor: `${LANE_COLORS[index]}88`,
+                    borderColor: withAlpha(LANE_COLORS[index], 0.53),
                     color: LANE_COLORS[index],
-                    background: `${LANE_COLORS[index]}0d`,
+                    background: withAlpha(LANE_COLORS[index], 0.05),
                   }}
                 >
                   {label}
                 </span>
                 <p
                   className="mt-1.5 truncate text-[7px] uppercase tracking-wider font-[family-name:var(--font-avenue-mono)]"
-                  style={{ color: `${LANE_COLORS[index]}aa` }}
+                  style={{ color: withAlpha(LANE_COLORS[index], 0.67) }}
                 >
                   {LANE_NAMES[index]}
                 </p>

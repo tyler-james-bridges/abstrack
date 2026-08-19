@@ -13,7 +13,12 @@ interface ScoreEntry {
   timestamp: bigint;
 }
 
-export function DailyLeaderboard() {
+interface DailyLeaderboardProps {
+  /** Row cap. The home rail shows 4; the full board lives on /records. */
+  maxRows?: number;
+}
+
+export function DailyLeaderboard({ maxRows = 10 }: DailyLeaderboardProps) {
   const [rows, setRows] = useState<ScoreEntry[]>([]);
   const [block, setBlock] = useState<bigint | null>(null);
 
@@ -48,15 +53,17 @@ export function DailyLeaderboard() {
           args: [dailyBlock],
         });
 
-        const entries = (result as unknown as ScoreEntry[])
-          .sort((a, b) => Number(b.score - a.score))
-          .slice(0, 10);
+        const entries = (result as unknown as ScoreEntry[]).sort(
+          (a, b) => Number(b.score - a.score)
+        );
         setRows(entries);
       } catch {
         setRows([]);
       }
     })();
   }, []);
+
+  const visibleRows = rows.slice(0, maxRows);
 
   return (
     <div className="w-full">
@@ -77,7 +84,7 @@ export function DailyLeaderboard() {
           <p className="text-sm text-white/30">No finalized runs yet. Be first.</p>
         ) : (
           <div className="space-y-1.5">
-            {rows.map((r, i) => (
+            {visibleRows.map((r, i) => (
               <div key={`${r.player}-${i}`} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
                 <span className="text-xs text-white/50 w-6">{i + 1}</span>
                 <span className="text-xs text-white/70 flex-1">{truncateAddress(r.player)}</span>
