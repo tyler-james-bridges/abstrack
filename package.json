@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --experimental-strip-types --import ./scripts/register-ts-specifier.mjs --test src/lib/game/fingerprint.test.ts"
   },
   "dependencies": {
     "@abstract-foundation/agw-client": "^1.8.6",

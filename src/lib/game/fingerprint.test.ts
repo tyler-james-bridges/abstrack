@@ -1,6 +1,7 @@
 /**
- * Run with:  node --test --experimental-strip-types src/lib/game/fingerprint.test.ts
- * (Node 22+. No new dependencies. Swap to vitest if you'd rather.)
+ * Run with:  pnpm test
+ * Node's type stripper does not add extensions, so the script registers a
+ * resolver for extensionless .ts imports. Node 22+. No new dependencies.
  *
  * These tests protect the one property everything else depends on:
  * the fingerprint is a pure function of the block.
